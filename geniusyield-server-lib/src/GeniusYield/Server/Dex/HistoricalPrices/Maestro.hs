@@ -27,22 +27,22 @@ import RIO.Text (unpack)
 import RIO.Time (Day)
 import Servant
 
-type MarketOHLCPrefix ∷ Symbol
+type MarketOHLCPrefix :: Symbol
 type MarketOHLCPrefix = "marketOHLC"
 
 data MarketOHLC = MarketOHLC
-  { marketOHLCBaseClose ∷ !Double,
-    marketOHLCBaseHigh ∷ !Double,
-    marketOHLCBaseLow ∷ !Double,
-    marketOHLCBaseOpen ∷ !Double,
-    marketOHLCBaseVolume ∷ !Double,
-    marketOHLCTargetClose ∷ !Double,
-    marketOHLCTargetHigh ∷ !Double,
-    marketOHLCTargetLow ∷ !Double,
-    marketOHLCTargetOpen ∷ !Double,
-    marketOHLCTargetVolume ∷ !Double,
-    marketOHLCCount ∷ !Natural,
-    marketOHLCTimestamp ∷ !GYTime
+  { marketOHLCBaseClose :: !Double,
+    marketOHLCBaseHigh :: !Double,
+    marketOHLCBaseLow :: !Double,
+    marketOHLCBaseOpen :: !Double,
+    marketOHLCBaseVolume :: !Double,
+    marketOHLCTargetClose :: !Double,
+    marketOHLCTargetHigh :: !Double,
+    marketOHLCTargetLow :: !Double,
+    marketOHLCTargetOpen :: !Double,
+    marketOHLCTargetVolume :: !Double,
+    marketOHLCCount :: !Natural,
+    marketOHLCTimestamp :: !GYTime
   }
   deriving stock (Show, Eq, Generic)
   deriving
@@ -57,29 +57,29 @@ instance Swagger.ToSchema MarketOHLC where
           & addSwaggerDescription "Returns market activity in candlestick OHLC format for a specific DEX and token pair"
           & addSwaggerExample (toJSON $ MarketOHLC {marketOHLCBaseClose = baseD, marketOHLCBaseHigh = baseD, marketOHLCBaseLow = baseD, marketOHLCBaseOpen = baseD, marketOHLCBaseVolume = 25.21128, marketOHLCTargetClose = targetD, marketOHLCTargetHigh = targetD, marketOHLCTargetLow = targetD, marketOHLCTargetOpen = targetD, marketOHLCTargetVolume = 121.358488, marketOHLCCount = 1, marketOHLCTimestamp = "2024-03-07T23:45:00Z"})
 
-newtype Limit = Limit {unLimit ∷ Word64}
+newtype Limit = Limit {unLimit :: Word64}
   deriving stock (Eq, Ord, Show, Generic)
   deriving newtype (Num, Enum, Real, Integral, ToHttpApiData, ToJSON)
 
-mkLimit ∷ Word64 → Maybe Limit
+mkLimit :: Word64 -> Maybe Limit
 mkLimit n = if n >= 1 && n <= 50_000 then Just (Limit n) else Nothing
 
-limitFromWord64FailMessage ∷ Text
+limitFromWord64FailMessage :: Text
 limitFromWord64FailMessage = "Limit must be between 1 and 50,000"
 
 instance FromJSON Limit where
   parseJSON v = do
-    w ← parseJSON v
+    w <- parseJSON v
     case mkLimit w of
-      Just l → pure l
-      Nothing → fail $ unpack limitFromWord64FailMessage
+      Just l -> pure l
+      Nothing -> fail $ unpack limitFromWord64FailMessage
 
 instance FromHttpApiData Limit where
   parseQueryParam t = do
-    w ← parseQueryParam t
+    w <- parseQueryParam t
     case mkLimit w of
-      Just l → Right l
-      Nothing → Left limitFromWord64FailMessage
+      Just l -> Right l
+      Nothing -> Left limitFromWord64FailMessage
 
 instance Swagger.ToParamSchema Limit where
   toParamSchema _ = mempty & Swagger.type_ ?~ Swagger.SwaggerInteger & Swagger.minimum_ ?~ 1 & Swagger.maximum_ ?~ 50_000
@@ -87,7 +87,7 @@ instance Swagger.ToParamSchema Limit where
 instance Swagger.ToSchema Limit where
   declareNamedSchema p = pure $ Swagger.NamedSchema (Just "Limit") $ Swagger.paramSchemaToSchema p & Swagger.example ?~ toJSON (Limit 1)
 
-newtype MaestroOrder = MaestroOrder {unMaestroOrder ∷ Order}
+newtype MaestroOrder = MaestroOrder {unMaestroOrder :: Order}
   deriving stock (Show)
   deriving newtype (ToHttpApiData, FromHttpApiData, Enum, Bounded, ToJSON)
 
@@ -104,7 +104,7 @@ instance Swagger.ToSchema MaestroOrder where
         & Swagger.description
       ?~ "Order of the results"
 
-newtype MaestroResolution = MaestroResolution {unMaestroResolution ∷ Resolution}
+newtype MaestroResolution = MaestroResolution {unMaestroResolution :: Resolution}
   deriving stock (Show)
   deriving newtype (ToHttpApiData, FromHttpApiData, FromJSON, ToJSON, Enum, Bounded)
 
@@ -121,7 +121,7 @@ instance Swagger.ToSchema MaestroResolution where
         & Swagger.description
       ?~ "Resolution of the data"
 
-newtype MaestroDex = MaestroDex {unMaestroDex ∷ Dex}
+newtype MaestroDex = MaestroDex {unMaestroDex :: Dex}
   deriving stock (Show)
   deriving newtype (ToHttpApiData, FromHttpApiData, FromJSON, ToJSON, Enum, Bounded)
 
@@ -150,20 +150,20 @@ type MaestroPriceHistoryAPI =
     :> QueryParam "sort" MaestroOrder
     :> Get '[JSON] [MarketOHLC]
 
-handleMaestroPriceHistoryApi ∷ Ctx → ServerT MaestroPriceHistoryAPI IO
+handleMaestroPriceHistoryApi :: Ctx -> ServerT MaestroPriceHistoryAPI IO
 handleMaestroPriceHistoryApi = handleMaestroPriceHistory
 
-handleMaestroPriceHistory ∷ Ctx → OrderAssetPair → MaestroDex → Maybe MaestroResolution → Maybe Day → Maybe Day → Maybe Limit → Maybe MaestroOrder → IO [MarketOHLC]
-handleMaestroPriceHistory ctx marketId (unMaestroDex → dex) (fmap unMaestroResolution → mresolution) mfrom mto mlimit (fmap unMaestroOrder → msort) = do
+handleMaestroPriceHistory :: Ctx -> OrderAssetPair -> MaestroDex -> Maybe MaestroResolution -> Maybe Day -> Maybe Day -> Maybe Limit -> Maybe MaestroOrder -> IO [MarketOHLC]
+handleMaestroPriceHistory ctx marketId (unMaestroDex -> dex) (fmap unMaestroResolution -> mresolution) mfrom mto mlimit (fmap unMaestroOrder -> msort) = do
   logInfo ctx $ "Fetching price history. Market: " +|| marketId ||+ ", DEX: " +|| dex ||+ ", Resolution: " +|| mresolution ||+ ", From: " +|| mfrom ||+ ", To: " +|| mto ||+ ", Limit: " +|| mlimit ||+ ", Sort: " +|| msort ||+ ""
   let MaestroProvider menv = ctxMaestroProvider ctx
-  currencyTicker ← adAssetTicker <$> handleAssetsApi ctx (currencyAsset marketId)
-  commodityTicker ← adAssetTicker <$> handleAssetsApi ctx (commodityAsset marketId)
+  currencyTicker <- adAssetTicker <$> handleAssetsApi ctx (currencyAsset marketId)
+  commodityTicker <- adAssetTicker <$> handleAssetsApi ctx (commodityAsset marketId)
   case (currencyTicker, commodityTicker) of
-    (Just (AssetTicker curTicker), Just (AssetTicker comTicker)) → do
-      maestroOhlcList ← try (pricesFromDex menv dex (TaggedText $ curTicker <> "-" <> comTicker) mresolution mfrom mto (unLimit <$> mlimit) msort) >>= handleMaestroError "handleMaestroPriceHistory"
+    (Just (AssetTicker curTicker), Just (AssetTicker comTicker)) -> do
+      maestroOhlcList <- try (pricesFromDex menv dex (TaggedText $ curTicker <> "-" <> comTicker) mresolution mfrom mto (unLimit <$> mlimit) msort) >>= handleMaestroError "handleMaestroPriceHistory"
       pure $ fromMaestroOhlc <$> maestroOhlcList
-    _anyOther → do
+    _anyOther -> do
       throwIO $ err400 {errBody = "Couldn't find ticker for currency or commodity asset."}
  where
   fromMaestroOhlc OHLCCandleInfo {..} =

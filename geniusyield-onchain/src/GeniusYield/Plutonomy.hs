@@ -19,7 +19,7 @@ instance Plutonomy.HasUPLC (TypedScript rl params) where
       where
         (# ver, scrpt #) = PlyUnsafe.unsafeUnTypedScript ts
 
-renameUPLC :: (name -> name') -> UPLC.Term name uni fun ann -> UPLC.Term name' uni fun ann
+renameUPLC ::  (name -> name') -> UPLC.Term name uni fun ann -> UPLC.Term name' uni fun ann
 renameUPLC rnm = go where
     go (UPLC.Var ann n       ) = UPLC.Var ann (rnm n)
     go (UPLC.LamAbs ann n t  ) = UPLC.LamAbs ann (rnm n) (go t)
@@ -30,18 +30,18 @@ renameUPLC rnm = go where
     go (UPLC.Builtin ann bn  ) = UPLC.Builtin ann bn
     go (UPLC.Error ann       ) = UPLC.Error ann
 
-renameProgram :: (name -> name') -> UPLC.Program name uni fun ann -> UPLC.Program name' uni fun ann
+renameProgram ::  (name -> name') -> UPLC.Program name uni fun ann -> UPLC.Program name' uni fun ann
 renameProgram f (UPLC.Program ann ver t) = UPLC.Program ann ver (renameUPLC f t)
 
-namedFromDeBruijn :: UPLC.DeBruijn -> UPLC.NamedDeBruijn
+namedFromDeBruijn ::  UPLC.DeBruijn -> UPLC.NamedDeBruijn
 namedFromDeBruijn (UPLC.DeBruijn i) = UPLC.NamedDeBruijn "x" i
 
-plutonomyMintingPolicyFromScript :: TypedScript 'MintingPolicyRole '[] -> Plutonomy.MintingPolicy
+plutonomyMintingPolicyFromScript ::  TypedScript 'MintingPolicyRole '[] -> Plutonomy.MintingPolicy
 plutonomyMintingPolicyFromScript (TypedScript _ s) =
     Plutonomy.mkMintingPolicyScript $
     PlutusTx.Code.DeserializedCode (renameProgram namedFromDeBruijn s) Nothing mempty
 
-plutonomyValidatorFromScript :: TypedScript 'ValidatorRole '[] -> Plutonomy.Validator
+plutonomyValidatorFromScript ::  TypedScript 'ValidatorRole '[] -> Plutonomy.Validator
 plutonomyValidatorFromScript (TypedScript _ s) =
     Plutonomy.mkValidatorScript $
     PlutusTx.Code.DeserializedCode (renameProgram namedFromDeBruijn s) Nothing mempty

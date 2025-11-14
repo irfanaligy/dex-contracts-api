@@ -21,21 +21,21 @@ import Prelude qualified as P
 
 data PartialOrderConfigDatum = PartialOrderConfigDatum
   { -- | Public key hashes of the potential signatories.
-    pocdSignatories ∷ [PubKeyHash],
+    pocdSignatories :: [PubKeyHash],
     -- | Number of required signatures.
-    pocdReqSignatories ∷ Integer,
+    pocdReqSignatories :: Integer,
     -- | Currency symbol of the partial order Nft.
-    pocdNftSymbol ∷ CurrencySymbol,
+    pocdNftSymbol :: CurrencySymbol,
     -- | Address to which fees are paid.
-    pocdFeeAddr ∷ Address,
+    pocdFeeAddr :: Address,
     -- | Flat fee (in lovelace) paid by the maker.
-    pocdMakerFeeFlat ∷ Integer,
+    pocdMakerFeeFlat :: Integer,
     -- | Proportional fee (in the offered token) paid by the maker.
-    pocdMakerFeeRatio ∷ Rational,
+    pocdMakerFeeRatio :: Rational,
     -- | Flat fee (in lovelace) paid by the taker.
-    pocdTakerFee ∷ Integer,
+    pocdTakerFee :: Integer,
     -- | Minimum required deposit (in lovelace).
-    pocdMinDeposit ∷ Integer
+    pocdMinDeposit :: Integer
   }
   deriving (Generic, P.Show)
 

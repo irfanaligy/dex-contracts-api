@@ -20,7 +20,7 @@ import           Plutarch.Prelude
      The function checks whether the second interval 'PPOSIXTimeRange' is completely contained
      withing first 'PPOSIXTimeRange'.
 -}
-pcontains ::
+pcontains :: 
   Term s (PPOSIXTimeRange
     :-->  PPOSIXTimeRange
     :-->  PBool
@@ -42,7 +42,7 @@ pcontains = phoistAcyclic $ plam $ \interval1 interval2
 
 
 -- | 'plowerbound' is plutarch level function of 'lowerBound'.
-plowerbound :: Term s (PPOSIXTime :--> PLowerBound PPOSIXTime)
+plowerbound ::  Term s (PPOSIXTime :--> PLowerBound PPOSIXTime)
 plowerbound = phoistAcyclic $ plam $ \a
   -> let
         lbValue = pcon $ PFinite (pdcons @"_0" # pdata a # pdnil)
@@ -54,7 +54,7 @@ plowerbound = phoistAcyclic $ plam $ \a
 
 
 -- | 'pupperBound' is plutarch level function of 'upperBound'.
-pupperBound :: Term s (PPOSIXTime :--> PUpperBound PPOSIXTime)
+pupperBound ::  Term s (PPOSIXTime :--> PUpperBound PPOSIXTime)
 pupperBound = phoistAcyclic $ plam $ \a
   -> let
         ubValue = pcon $ PFinite (pdcons @"_0" # pdata a # pdnil)
@@ -65,7 +65,7 @@ pupperBound = phoistAcyclic $ plam $ \a
      pcon ub
 
 -- | 'pFrom' is the plutarch level function of 'from'.
-pFrom ::
+pFrom :: 
   Term s (PPOSIXTime
     :-->  PInterval PPOSIXTime
          )
@@ -82,7 +82,7 @@ pFrom = phoistAcyclic $ plam $ \a
                        )
 
 -- | 'pTo' is the plutarch level function of 'to'.
-pTo ::
+pTo :: 
   Term s (PPOSIXTime
     :-->  PInterval PPOSIXTime
          )
@@ -99,7 +99,7 @@ pTo = phoistAcyclic $ plam $ \a
                        )
 
 -- | 'pinterval' is plutarch level function of 'interval'.
-pinterval ::
+pinterval :: 
   Term s (PPOSIXTime
     :-->  PPOSIXTime
     :-->  PInterval PPOSIXTime

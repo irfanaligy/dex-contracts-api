@@ -22,16 +22,16 @@ import           Ply.Plutarch
 
 type POConfigScript = TypedScript 'ValidatorRole '[AssetClass]
 
-originalPartialOrderConfigValidator :: Config -> Either Text POConfigScript
+originalPartialOrderConfigValidator ::  Config -> Either Text POConfigScript
 originalPartialOrderConfigValidator cnf = toTypedScript cnf mkPartialOrderConfigValidator'
 
-optimizedPartialOrderConfigValidator :: Either Text POConfigScript
+optimizedPartialOrderConfigValidator ::  Either Text POConfigScript
 optimizedPartialOrderConfigValidator = Plutonomy.optimizeUPLC <$> originalPartialOrderConfigValidator def
 
-optimizedPartialOrderConfigValidatorWithTracing :: Either Text POConfigScript
+optimizedPartialOrderConfigValidatorWithTracing ::  Either Text POConfigScript
 optimizedPartialOrderConfigValidatorWithTracing = Plutonomy.optimizeUPLC <$> originalPartialOrderConfigValidator def {tracingMode = desiredTracingMode}
 
-mkPartialOrderConfigValidator' ::
+mkPartialOrderConfigValidator' :: 
   ClosedTerm ( PAssetClass
           :--> PV2.PValidator
              )

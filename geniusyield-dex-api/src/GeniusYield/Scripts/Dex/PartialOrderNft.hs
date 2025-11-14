@@ -31,14 +31,14 @@ import PlutusLedgerApi.V1.Value (AssetClass)
 import Ply (ScriptRole (..), TypedScript, (#))
 
 class HasPartialOrderNftScript a where
-  getPartialOrderNftPolicy ∷ a → POCVersion → TypedScript 'MintingPolicyRole '[ScriptHash, Address, AssetClass]
+  getPartialOrderNftPolicy :: a -> POCVersion -> TypedScript 'MintingPolicyRole '[ScriptHash, Address, AssetClass]
 
 partialOrderNftMintingPolicy
-  ∷ (HasPartialOrderNftScript a, HasPartialOrderScript a, HasPartialOrderConfigAddr a)
-  ⇒ a
-  → POCVersion
-  → GYAssetClass
-  → GYMintingPolicy 'PlutusV2
+  :: (HasPartialOrderNftScript a, HasPartialOrderScript a, HasPartialOrderConfigAddr a)
+  => a
+  -> POCVersion
+  -> GYAssetClass
+  -> GYMintingPolicy 'PlutusV2
 partialOrderNftMintingPolicy a pocVersion ac =
   mintingPolicyFromPly $
     getPartialOrderNftPolicy a pocVersion

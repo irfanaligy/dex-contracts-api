@@ -22,7 +22,7 @@ import GeniusYield.Imports ((&))
 
 {- | Version of the family of partial order contracts.
 
->>> maxBound :: POCVersion
+>>> maxBound ::  POCVersion
 POCVersion1_1
 -}
 data POCVersion = POCVersion1 | POCVersion1_1
@@ -33,11 +33,11 @@ instance Default POCVersion where
   def = maxBound
 
 -- | Same as @def@ but grep friendly.
-defaultPOCVersion ∷ POCVersion
+defaultPOCVersion :: POCVersion
 defaultPOCVersion = def
 
 instance Swagger.ToParamSchema POCVersion where
-  toParamSchema _ = mempty & Swagger.type_ ?~ Swagger.SwaggerString & Swagger.enum_ ?~ map Aeson.toJSON [minBound ∷ POCVersion .. maxBound]
+  toParamSchema _ = mempty & Swagger.type_ ?~ Swagger.SwaggerString & Swagger.enum_ ?~ map Aeson.toJSON [minBound :: POCVersion .. maxBound]
 
 instance Swagger.ToSchema POCVersion where
   declareNamedSchema p =
@@ -49,26 +49,26 @@ instance Swagger.ToSchema POCVersion where
             & Swagger.description
           ?~ "Version of the family of partial order contracts"
 
-data SingPOCVersion (v ∷ POCVersion) where
-  SingPOCVersion1 ∷ SingPOCVersion 'POCVersion1
-  SingPOCVersion1_1 ∷ SingPOCVersion 'POCVersion1_1
+data SingPOCVersion (v :: POCVersion) where
+  SingPOCVersion1 :: SingPOCVersion 'POCVersion1
+  SingPOCVersion1_1 :: SingPOCVersion 'POCVersion1_1
 
 data SomeSingPOCVersion where
-  SomeSingPOCVersion ∷ SingPOCVersionI v ⇒ SingPOCVersion v → SomeSingPOCVersion
+  SomeSingPOCVersion :: SingPOCVersionI v => SingPOCVersion v -> SomeSingPOCVersion
 
-toSingPOCVersion ∷ POCVersion → SomeSingPOCVersion
+toSingPOCVersion :: POCVersion -> SomeSingPOCVersion
 toSingPOCVersion POCVersion1 = SomeSingPOCVersion SingPOCVersion1
 toSingPOCVersion POCVersion1_1 = SomeSingPOCVersion SingPOCVersion1_1
 
-fromSingPOCVersion ∷ SingPOCVersion v → POCVersion
+fromSingPOCVersion :: SingPOCVersion v -> POCVersion
 fromSingPOCVersion SingPOCVersion1 = POCVersion1
 fromSingPOCVersion SingPOCVersion1_1 = POCVersion1_1
 
-withSomeSingPOCVersion ∷ SomeSingPOCVersion → (∀ v. SingPOCVersionI v ⇒ SingPOCVersion v → r) → r
+withSomeSingPOCVersion :: SomeSingPOCVersion -> (forall v. SingPOCVersionI v => SingPOCVersion v -> r) -> r
 withSomeSingPOCVersion (SomeSingPOCVersion s) f = f s
 
-class SingPOCVersionI (v ∷ POCVersion) where
-  singPOCVersion ∷ SingPOCVersion v
+class SingPOCVersionI (v :: POCVersion) where
+  singPOCVersion :: SingPOCVersion v
 
 instance SingPOCVersionI 'POCVersion1 where
   singPOCVersion = SingPOCVersion1

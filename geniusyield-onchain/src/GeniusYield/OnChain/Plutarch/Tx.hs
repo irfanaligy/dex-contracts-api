@@ -52,7 +52,7 @@ import           GeniusYield.OnChain.Plutarch.Utils (pelem', pfromMaybe, ptryFro
 
 -- | 'pownUtxo' returns the 'PTxOutRef' that tx is trying to spend, fails if 'PScriptContext'
 --   doesn't have 'PSpending'.
-pownUtxo ::
+pownUtxo :: 
   Term s (PV2.PScriptContext
      :--> PTxOutRef
          )
@@ -64,7 +64,7 @@ pownUtxo = phoistAcyclic $ plam $ \ctx
 
 
 -- | 'putxoConsumed' checks if a given utxo is consumed.
-putxoConsumed ::
+putxoConsumed :: 
   Term s (PTxOutRef
      :--> PBuiltinList PV2.PTxInInfo
      :--> PBool
@@ -74,7 +74,7 @@ putxoConsumed = phoistAcyclic $ plam $ \txOutRef inputs
      plam (\x -> txOutRef #== pfield @"outRef" # x) # inputs
 
 -- | 'ptxSignedBy' checks if a tx is signed by particular 'PPubKeyHash'.
-ptxSignedBy ::
+ptxSignedBy :: 
   Term s (PPubKeyHash
      :--> PBuiltinList (PAsData PPubKeyHash)
      :--> PBool
@@ -96,7 +96,7 @@ ptxSignedBy = phoistAcyclic $ plam $ \sig sigs
 -- >>> evalT $ phasSignatures # (pcons # pub4 #$ pcons # pub3 #$ pcons # pub2 # pnil) # (pcons # pub1 #$ pcons # pub2 #$ pcons # pub3 # pnil) # 2
 -- Right (Script {unScript = Program {_progAnn = (), _progVer = Version () 1 0 0, _progTerm = Constant () (Some (ValueOf DefaultUniBool True))}},ExBudget {exBudgetCPU = ExCPU 30821725, exBudgetMemory = ExMemory 69123},[])
 --
-phasSignatures ::
+phasSignatures :: 
   Term s (PBuiltinList (PAsData PPubKeyHash)
           -- ^ Transaction signatories.
      :--> PBuiltinList (PAsData PPubKeyHash)
@@ -123,12 +123,12 @@ phasSignatures =
         # 0
 
 -- | 'toDatum' Converts any 'PType' that has instance of 'PIsData' to 'PDatum'.
-toDatum :: forall a s. PIsData a => Term s a -> Term s PDatum
+toDatum ::  forall a s. PIsData a => Term s a -> Term s PDatum
 toDatum = pcon . PDatum . pforgetData . pdata
 
 -- | 'pfindTxOutByTxOutRef' searches for 'PTxInInfo' given 'PTxOutRef' and returns 'PTxOut' of the
 --   matched 'PTxInInfo', fails if such 'PTxInInfo' is not present.
-pfindTxOutByTxOutRef ::
+pfindTxOutByTxOutRef :: 
   Term s (PTxOutRef
     :-->  PBuiltinList PV2.PTxInInfo
     :-->  PV2.PTxOut
@@ -143,13 +143,13 @@ pfindTxOutByTxOutRef = phoistAcyclic $ plam $ \txOutRef inputs
               # inputs
 
 -- errors if the purpose isn't "Minting"
-pownSymbol :: Term s (PV2.PScriptContext :--> PCurrencySymbol)
+pownSymbol ::  Term s (PV2.PScriptContext :--> PCurrencySymbol)
 pownSymbol = phoistAcyclic $ plam $ \ctx -> unTermCont $ do
   PMinting csRec <- pmatchC $ pfield @"purpose" # ctx
   pure $ pfield @"_0" # csRec
 
 -- | 'pexpectedTokenName' is the 'psha2_256' hash of 'PTxId' + 'Integer' of the given 'PTxOutRef'.
-pexpectedTokenName ::
+pexpectedTokenName :: 
   Term s (PTxOutRef
     :-->  PTokenName
          )
@@ -163,7 +163,7 @@ pexpectedTokenName = phoistAcyclic $ plam $ \txOutRef
       is present in any of the output 'PTxOut' of `PTxInfo`.
       Returns 'mempty' is nothing is paid.
 -}
-ppaidValue :: PIsData a => Term s (a
+ppaidValue ::  PIsData a => Term s (a
   :--> PAddress
   :--> PMap 'PMap.Unsorted PDatumHash PDatum
   :--> PBuiltinList PV2.PTxOut
@@ -185,7 +185,7 @@ ppaidValue = phoistAcyclic $ ppaidValueCore $ \f ->
 
   __NOTE:__ It's difference with respect to `ppaidValue` is that it supports matching against both inlined or non-inlined datum.
 -}
-ppaidValuePlusInline :: PIsData a
+ppaidValuePlusInline ::  PIsData a
                      => Term s (
                              a
                         :--> PAddress
@@ -202,7 +202,7 @@ ppaidValuePlusInline = phoistAcyclic $ ppaidValueCorePlusInline $ \f ->
     (const mempty)
 
 -- | Like 'ppaidValue', but sums up 'PValue's from multiple UTxOs if there are multiple matches.
-ppaidValueSum :: PIsData a => Term s (a
+ppaidValueSum ::  PIsData a => Term s (a
   :--> PAddress
   :--> PMap 'PMap.Unsorted PDatumHash PDatum
   :--> PBuiltinList PV2.PTxOut
@@ -217,7 +217,7 @@ ppaidValueSum = phoistAcyclic $ ppaidValueCore $ \f ->
         )
     # mempty
 
-ppaidValueCore :: PIsData a
+ppaidValueCore ::  PIsData a
                => (Term s (PV2.PTxOut :--> PBool)
                -> Term s (PBuiltinList PV2.PTxOut :--> PValue 'Sorted 'Positive))
                -> Term s (a
@@ -250,7 +250,7 @@ ppaidValueCore go = plam $ \ref addr datums -> unTermCont $ do
 
   pure $ go f
 
-ppaidValueCorePlusInline :: PIsData a
+ppaidValueCorePlusInline ::  PIsData a
                          => (Term s (PV2.PTxOut :--> PBool)
                          -> Term s (PBuiltinList PV2.PTxOut :--> PValue 'Sorted 'Positive))
                          -> Term s (a
@@ -274,7 +274,7 @@ ppaidValueCorePlusInline go = plam $ \ref addr datums -> unTermCont $ do
                 PJust outDatum -> pure $ commonCheck # outDatum # outAddr
   pure $ go f
 
-pmintedTokens ::
+pmintedTokens :: 
   Term s (PCurrencySymbol
     :-->  PTokenName
     :-->  PV2.PTxInfo
@@ -287,7 +287,7 @@ pmintedTokens = phoistAcyclic $ plam $ \cs tn info
       PJust tnMap <-  pmatchC $ PMap.plookup # cs # mint
       return (pfromMaybe # 0 # (PMap.plookup # tn # tnMap))
 
-pdecodeInlineDatum :: forall a s. (PTryFrom PData (PAsData a), PIsData a)
+pdecodeInlineDatum ::  forall a s. (PTryFrom PData (PAsData a), PIsData a)
                    => Term s (PV2.POutputDatum :--> a)
 pdecodeInlineDatum = phoistAcyclic $
     plam $ \od ->
@@ -297,7 +297,7 @@ pdecodeInlineDatum = phoistAcyclic $
                     (pfromData . ptryFromData @a . pto . pfromData) datumResolved
             _                      -> ptraceError "expected inline datum"
 
-presolveInlineDatum :: Term s (PV2.POutputDatum :--> PDatum)
+presolveInlineDatum ::  Term s (PV2.POutputDatum :--> PDatum)
 presolveInlineDatum = phoistAcyclic $
   plam $ \od ->
     pmatch od $ \case
@@ -305,7 +305,7 @@ presolveInlineDatum = phoistAcyclic $
       _                      -> ptraceError "expected inline datum"
 
 -- | If the datum of output is inlined, we return it else if it contains hash, we try to find the corresponding datum from witness.
-presolveDatum ::
+presolveDatum :: 
   Term s (PV2.POutputDatum
      :--> PMap 'PMap.Unsorted PDatumHash PDatum
      :--> PDatum

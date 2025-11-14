@@ -19,16 +19,16 @@ import           PlutusTx.Prelude
 import           PlutusTx.Ratio
 
 {-# INLINABLE paidValue #-}
-paidValue :: ScriptContext -> Address -> Value
+paidValue ::  ScriptContext -> Address -> Value
 paidValue ctx' = case scriptContextPurpose ctx' of
   Spending x -> paidValue' x $ scriptContextTxInfo ctx'
   _          -> error ()
 
 {-# INLINABLE paidValue' #-}
-paidValue' :: TxOutRef -> TxInfo -> Address -> Value
+paidValue' ::  TxOutRef -> TxInfo -> Address -> Value
 paidValue' ownUTxO' info' addr = go $ txInfoOutputs info'
   where
-    go :: [TxOut] -> Value
+    go ::  [TxOut] -> Value
     go xs =
       let
         o = head xs
@@ -37,10 +37,10 @@ paidValue' ownUTxO' info' addr = go $ txInfoOutputs info'
             then txOutValue o
             else go $ tail xs
 
-    expectedHash :: Maybe DatumHash
+    expectedHash ::  Maybe DatumHash
     expectedHash = go' $ txInfoData info'
       where
-        go' :: [(DatumHash, Datum)] -> Maybe DatumHash
+        go' ::  [(DatumHash, Datum)] -> Maybe DatumHash
         go' xs =
           let
             (dh, d) = head xs
@@ -49,20 +49,20 @@ paidValue' ownUTxO' info' addr = go $ txInfoOutputs info'
                 then Just dh
                 else go' $ tail xs
 
-    expectedDatum :: Datum
+    expectedDatum ::  Datum
     expectedDatum = Datum $ toBuiltinData ownUTxO'
 
-    p :: TxOut -> Bool
+    p ::  TxOut -> Bool
     p o = (txOutAddress o == addr) && (txOutDatumHash o == expectedHash)
 
 {-# INLINABLE integerToBuiltinByteString #-}
-integerToBuiltinByteString :: Integer -> BuiltinByteString
+integerToBuiltinByteString ::  Integer -> BuiltinByteString
 integerToBuiltinByteString n
     | n < 0     = traceError "only non-negative Integers can be converted"
     | n == 0    = 48 `consByteString` emptyByteString
     | otherwise = go n emptyByteString
   where
-    go :: Integer -> BuiltinByteString -> BuiltinByteString
+    go ::  Integer -> BuiltinByteString -> BuiltinByteString
     go m acc
         | m == 0    = acc
         | otherwise =
@@ -73,28 +73,28 @@ integerToBuiltinByteString n
                 go m' $ consByteString (r + 48) acc
 
 {-# INLINABLE builtinByteStringToHex #-}
-builtinByteStringToHex :: BuiltinByteString -> BuiltinByteString
+builtinByteStringToHex ::  BuiltinByteString -> BuiltinByteString
 builtinByteStringToHex s = go (lengthOfByteString s - 1) emptyByteString
   where
-    go :: Integer -> BuiltinByteString -> BuiltinByteString
+    go ::  Integer -> BuiltinByteString -> BuiltinByteString
     go i acc
         | i < 0     = acc
         | otherwise = go (i - 1) $ appendByteString (byteToBuiltinByteString $ indexByteString s i) acc
 
 {-# INLINABLE byteToBuiltinByteString #-}
-byteToBuiltinByteString :: Integer -> BuiltinByteString
+byteToBuiltinByteString ::  Integer -> BuiltinByteString
 byteToBuiltinByteString n = consByteString (digitToByte h) $ consByteString (digitToByte l) emptyByteString
   where
     h = divide n 16
     l = modulo n 16
 
-    digitToByte :: Integer -> Integer
+    digitToByte ::  Integer -> Integer
     digitToByte x
         | x <= 9    = x + 48
         | otherwise = x + 87
 
 {-# INLINABLE ceiling #-}
-ceiling :: Rational -> Integer
+ceiling ::  Rational -> Integer
 ceiling x
     | x < zero  = truncate x
     | x == y    = truncate x
@@ -103,18 +103,18 @@ ceiling x
     y = fromInteger $ truncate x
 
 {-# INLINABLE mintedTokens #-}
-mintedTokens :: CurrencySymbol -> TokenName -> TxInfo -> Integer
+mintedTokens ::  CurrencySymbol -> TokenName -> TxInfo -> Integer
 mintedTokens cs tn info =
   let
     Just m = Map.lookup cs $ getValue $ txInfoMint info
   in
     fromMaybe 0 $ Map.lookup tn m
 
-notSignedBy :: TxInfo -> PubKeyHash -> Bool
+notSignedBy ::  TxInfo -> PubKeyHash -> Bool
 notSignedBy info' pkh' = go $ txInfoSignatories info'
   where
-    go :: [PubKeyHash] -> Bool
+    go ::  [PubKeyHash] -> Bool
     go xs = null xs || (head xs /= pkh' && go (tail xs))
 
-desiredTracingMode :: TracingMode
+desiredTracingMode ::  TracingMode
 desiredTracingMode = DoTracing

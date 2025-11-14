@@ -17,13 +17,13 @@ import qualified Plutonomy
 import           GeniusYield.OnChain.DEX.NFT
 import           GeniusYield.Plutonomy ()
 
-originalNftPolicy :: Either Text (TypedScript 'MintingPolicyRole '[])
+originalNftPolicy ::  Either Text (TypedScript 'MintingPolicyRole '[])
 originalNftPolicy = toTypedScript def mkNFTPolicy'
 
-optimizedNftPolicy :: Either Text (TypedScript 'MintingPolicyRole '[])
+optimizedNftPolicy ::  Either Text (TypedScript 'MintingPolicyRole '[])
 optimizedNftPolicy = Plutonomy.optimizeUPLC <$> originalNftPolicy
 
-mkNFTPolicy' :: ClosedTerm PV2.PMintingPolicy
+mkNFTPolicy' ::  ClosedTerm PV2.PMintingPolicy
 mkNFTPolicy' = plam $ \redm ctx ->
   popaque $ mkNFTPolicy
     # PUNSAFE.punsafeCoerce redm

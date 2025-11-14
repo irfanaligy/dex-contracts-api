@@ -8,5 +8,5 @@ import GitHash
 import RIO
 
 -- | The git hash of the current commit.
-gitHash ∷ String
+gitHash :: String
 gitHash = either (const "UNKNOWN_REVISION") giHash $$tGitInfoCwdTry

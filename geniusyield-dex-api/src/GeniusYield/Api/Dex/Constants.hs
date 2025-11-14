@@ -18,7 +18,7 @@ import PlutusLedgerApi.V1.Scripts (ScriptHash)
 import PlutusLedgerApi.V1.Value (AssetClass)
 import Ply (ScriptRole (..), TypedScript)
 
-poRefsMainnet ∷ PORefs
+poRefsMainnet :: PORefs
 poRefsMainnet =
   PORefs
     { porV1 =
@@ -35,7 +35,7 @@ poRefsMainnet =
           }
     }
 
-poRefsPreprod ∷ PORefs
+poRefsPreprod :: PORefs
 poRefsPreprod =
   PORefs
     { porV1 =
@@ -52,28 +52,28 @@ poRefsPreprod =
           }
     }
 
-poConfigAddrMainnet ∷ POCVersion → GYAddress
+poConfigAddrMainnet :: POCVersion -> GYAddress
 poConfigAddrMainnet =
   let v1Addr = unsafeAddressFromText "addr1w9zr09hgj7z6vz3d7wnxw0u4x30arsp5k8avlcm84utptls8uqd0z"
       v1_1Addr = unsafeAddressFromText "addr1wxcqkdhe7qcfkqcnhlvepe7zmevdtsttv8vdfqlxrztaq2gge58rd"
    in \case
-        POCVersion1 → v1Addr
-        POCVersion1_1 → v1_1Addr
+        POCVersion1 -> v1Addr
+        POCVersion1_1 -> v1_1Addr
 
-poConfigAddrPreprod ∷ POCVersion → GYAddress
+poConfigAddrPreprod :: POCVersion -> GYAddress
 poConfigAddrPreprod =
   let v1Addr = unsafeAddressFromText "addr_test1wrgvy8fermjrruaf7fnndtmpuw4xx4cnvfqjp5zqu8kscfcvh32qk"
       v1_1Addr = unsafeAddressFromText "addr_test1wqzy2cay2twmcq68ypk4wjyppz6e4vjj4udhvkp7dfjet2quuh3la"
    in \case
-        POCVersion1 → v1Addr
-        POCVersion1_1 → v1_1Addr
+        POCVersion1 -> v1Addr
+        POCVersion1_1 -> v1_1Addr
 
 -- | Type that encapsulates the scripts needed for the dex api.
 data DEXInfo = DEXInfo
-  { dexPartialOrderValidator ∷ !(TypedScript 'ValidatorRole '[Address, AssetClass]),
-    dexNftPolicy ∷ !(POCVersion → TypedScript 'MintingPolicyRole '[ScriptHash, Address, AssetClass]),
-    dexPartialOrderConfigAddr ∷ !(POCVersion → GYAddress),
-    dexPORefs ∷ !PORefs
+  { dexPartialOrderValidator :: !(TypedScript 'ValidatorRole '[Address, AssetClass]),
+    dexNftPolicy :: !(POCVersion -> TypedScript 'MintingPolicyRole '[ScriptHash, Address, AssetClass]),
+    dexPartialOrderConfigAddr :: !(POCVersion -> GYAddress),
+    dexPORefs :: !PORefs
   }
 
 instance HasPartialOrderScript DEXInfo where
@@ -85,12 +85,12 @@ instance HasPartialOrderNftScript DEXInfo where
 instance HasPartialOrderConfigAddr DEXInfo where
   getPartialOrderConfigAddr = dexPartialOrderConfigAddr
 
-nftPolicy ∷ POCVersion → TypedScript 'MintingPolicyRole '[ScriptHash, Address, AssetClass]
+nftPolicy :: POCVersion -> TypedScript 'MintingPolicyRole '[ScriptHash, Address, AssetClass]
 nftPolicy = \case
-  POCVersion1 → nftPolicyV1
-  POCVersion1_1 → nftPolicyV1_1
+  POCVersion1 -> nftPolicyV1
+  POCVersion1_1 -> nftPolicyV1_1
 
-dexInfoDefaultMainnet ∷ DEXInfo
+dexInfoDefaultMainnet :: DEXInfo
 dexInfoDefaultMainnet =
   DEXInfo
     { dexPartialOrderValidator = orderValidator,
@@ -99,7 +99,7 @@ dexInfoDefaultMainnet =
       dexPORefs = poRefsMainnet
     }
 
-dexInfoDefaultPreprod ∷ DEXInfo
+dexInfoDefaultPreprod :: DEXInfo
 dexInfoDefaultPreprod =
   DEXInfo
     { dexPartialOrderValidator = orderValidator,

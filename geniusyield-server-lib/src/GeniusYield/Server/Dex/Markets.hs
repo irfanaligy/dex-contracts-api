@@ -24,9 +24,9 @@ import Servant
 -}
 
 data Market = Market
-  { marketId ∷ !OrderAssetPair,
-    baseAsset ∷ !GYAssetClass,
-    targetAsset ∷ !GYAssetClass
+  { marketId :: !OrderAssetPair,
+    baseAsset :: !GYAssetClass,
+    targetAsset :: !GYAssetClass
   }
   deriving stock (Show, Eq, Generic)
   deriving
@@ -34,7 +34,7 @@ data Market = Market
     via CustomJSON '[FieldLabelModifier '[CamelToSnake]] Market
 
 {- |
->>> Aeson.encode (Swagger.toSchema (Proxy :: Proxy Market))
+>>> Aeson.encode (Swagger.toSchema (Proxy ::  Proxy Market))
 "{\"description\":\"Market information\",\"required\":[\"market_id\",\"base_asset\",\"target_asset\"],\"properties\":{\"market_id\":{\"$ref\":\"#/definitions/MarketId\"},\"base_asset\":{\"$ref\":\"#/definitions/BaseAsset\"},\"target_asset\":{\"$ref\":\"#/definitions/TargetAsset\"}},\"type\":\"object\"}"
 -}
 instance Swagger.ToSchema Market where
@@ -47,13 +47,13 @@ type MarketsAPI =
     :> Description ("Returns the list of markets information supported by GeniusYield DEX. " `AppendSymbol` CommonMaestroKeyRequirementText)
     :> Get '[JSON] [Market]
 
-handleMarketsApi ∷ Ctx → ServerT MarketsAPI IO
+handleMarketsApi :: Ctx -> ServerT MarketsAPI IO
 handleMarketsApi = handleMarkets
 
-handleMarkets ∷ Ctx → IO [Market]
+handleMarkets :: Ctx -> IO [Market]
 handleMarkets ctx = do
   logInfo ctx "Fetching markets."
   fmap fromOrderAssetPair <$> getMarkets (ctxMaestroProvider ctx)
  where
-  fromOrderAssetPair ∷ OrderAssetPair → Market
+  fromOrderAssetPair :: OrderAssetPair -> Market
   fromOrderAssetPair oap = Market {marketId = oap, baseAsset = currencyAsset oap, targetAsset = commodityAsset oap}

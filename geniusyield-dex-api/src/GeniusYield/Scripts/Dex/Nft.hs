@@ -26,16 +26,16 @@ import PlutusTx.Builtins qualified as Plutus (
   sha2_256,
  )
 
-mkNftRedeemer ∷ Maybe GYTxOutRef → GYRedeemer
+mkNftRedeemer :: Maybe GYTxOutRef -> GYRedeemer
 mkNftRedeemer = redeemerFromPlutusData . fmap txOutRefToPlutus
 
-expectedTokenName ∷ Plutus.TxOutRef → Plutus.TokenName
+expectedTokenName :: Plutus.TxOutRef -> Plutus.TokenName
 expectedTokenName (Plutus.TxOutRef (Plutus.TxId tid) ix) = Plutus.TokenName s
  where
-  s ∷ Plutus.BuiltinByteString
+  s :: Plutus.BuiltinByteString
   s = Plutus.sha2_256 (Plutus.consByteString ix tid)
 
-gyExpectedTokenName ∷ GYTxOutRef → GYTokenName
+gyExpectedTokenName :: GYTxOutRef -> GYTokenName
 gyExpectedTokenName =
   fromJust
     . tokenNameFromPlutus

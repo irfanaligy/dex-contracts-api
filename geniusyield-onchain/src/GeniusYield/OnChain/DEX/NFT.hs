@@ -16,14 +16,14 @@ import           Plutarch.Prelude
 import           GeniusYield.OnChain.Plutarch.Api
 import qualified Plutarch.Api.V2 as PV2
 
-mkNFTPolicy ::
+mkNFTPolicy :: 
   Term s (PAsData (PMaybeData PTxOutRef)
      :--> PV2.PScriptContext
      :--> PUnit
          )
 mkNFTPolicy = plam $ \mtxOutRef ctx -> policy (pfromData mtxOutRef) ctx
   where
-    policy ::
+    policy :: 
           Term s (PMaybeData PTxOutRef)
       ->  Term s PV2.PScriptContext
       ->  Term s PUnit
@@ -41,7 +41,7 @@ mkNFTPolicy = plam $ \mtxOutRef ctx -> policy (pfromData mtxOutRef) ctx
                                       info #
                                       (mintedTokens_ # (pownSymbol # ctx) # info)
 
-    validateMinting ::
+    validateMinting :: 
         Term s (PTxOutRef
           :-->  PTokenName
           :-->  PV2.PTxInfo
@@ -66,7 +66,7 @@ mkNFTPolicy = plam $ \mtxOutRef ctx -> policy (pfromData mtxOutRef) ctx
                             (ptraceError errMsg)
                           ) (ptraceError "minted tokens list should not be empty.") . pto
 
-    checkIfBurning ::
+    checkIfBurning :: 
       Term s (PCurrencySymbol
         :-->  PV2.PTxInfo
         :-->  PUnit
@@ -80,7 +80,7 @@ mkNFTPolicy = plam $ \mtxOutRef ctx -> policy (pfromData mtxOutRef) ctx
                       (ptraceError "expected only burning")
                       (pconstant ())
 
-mintedTokens_ ::
+mintedTokens_ :: 
   Term s (PCurrencySymbol
      :--> PV2.PTxInfo
      :--> PMap 'Sorted PTokenName PInteger

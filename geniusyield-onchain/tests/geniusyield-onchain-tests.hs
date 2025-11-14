@@ -30,10 +30,10 @@ import           GeniusYield.OnChain.DEX.PartialOrderNFTV1_1.Compiled  (original
 import           GeniusYield.Plutonomy                                 (plutonomyMintingPolicyFromScript,
                                                                         plutonomyValidatorFromScript)
 
-getOrthrowText :: Either Text a -> IO a
+getOrthrowText ::  Either Text a -> IO a
 getOrthrowText = either (throwIO . userError . Txt.unpack) pure
 
-main :: IO ()
+main ::  IO ()
 main = do
     partialOrderVal <- getOrthrowText $ originalPartialOrderValidator def
     partialOrderNftPolicy <- getOrthrowText $ originalPartialOrderNftPolicy def

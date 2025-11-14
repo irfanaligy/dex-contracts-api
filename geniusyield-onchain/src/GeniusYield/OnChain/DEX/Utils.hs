@@ -42,7 +42,7 @@ import           Plutarch.Api.V1.AssocMap                   (plookup)
 import           Plutarch.Api.V1.Value                      (pforgetPositive, pvalueOf)
 import           Plutarch.Unsafe                            (punsafeCoerce)
 
-pfindMarkedRefInput :: Term s (PBuiltinList PV2.PTxInInfo
+pfindMarkedRefInput ::  Term s (PBuiltinList PV2.PTxInInfo
                           :--> PAddress
                           :--> PAssetClass
                           :--> PPartialOrderConfigDatum)
@@ -52,7 +52,7 @@ pfindMarkedRefInput = phoistAcyclic $
             PNothing             -> ptraceError "reference input not found"
             PJust markedRefInput -> punsafeCoerce . pto $ presolveInlineDatum #$ pfield @"datum" #$ pfield @"resolved" # markedRefInput  -- Note that we are using `punsafeCoerce` here, so we don't verify whether datum is of correct type but since this UTxO is maintained by us, it would have correct structure.
   where
-    matches :: Term s (PAddress :--> PAssetClass :--> PV2.PTxInInfo :--> PBool)
+    matches ::  Term s (PAddress :--> PAssetClass :--> PV2.PTxInInfo :--> PBool)
     matches = phoistAcyclic $
         plam $ \reqAddr reqAsset txininfo ->
             plet (pfield @"resolved" # txininfo) $
@@ -61,12 +61,12 @@ pfindMarkedRefInput = phoistAcyclic $
                         getField @"address" resolved' #== reqAddr
                     #&& passetClassValueOf # getField @"value" resolved' # reqAsset #== 1
 
-pisFeeOutput :: Term s (PAddress :--> PV2.PTxOut :--> PBool)
+pisFeeOutput ::  Term s (PAddress :--> PV2.PTxOut :--> PBool)
 pisFeeOutput = phoistAcyclic $
     plam $ \feeAddr txout ->
         pfield @"address" # txout #== feeAddr
 
-pfindFeeOutput :: Term s (PBuiltinList PV2.PTxOut
+pfindFeeOutput ::  Term s (PBuiltinList PV2.PTxOut
                      :--> PMap 'Unsorted PDatumHash PDatum
                      :--> PAddress
                      :--> PAsData PInteger
@@ -103,7 +103,7 @@ pfindFeeOutput = phoistAcyclic $
 -- We need to check whether the output contains a token with the given symbol and that this token is not
 -- being minted in the current transaction (in which case the output would be a freshly placed order).
 -- If yes, return the corresponding token name; otherwise, return Nothing.
-ppartialOrderToken :: Term s (PAddress :--> PCurrencySymbol :--> PValue 'Sorted 'NoGuarantees :--> PV2.PTxOut :--> PMaybe PTokenName)
+ppartialOrderToken ::  Term s (PAddress :--> PCurrencySymbol :--> PValue 'Sorted 'NoGuarantees :--> PV2.PTxOut :--> PMaybe PTokenName)
 ppartialOrderToken = phoistAcyclic $
     plam $ \ownAddr nftSymbol mint out -> unTermCont $ do
         out' <- pletFieldsC @["value", "address"] out
@@ -115,7 +115,7 @@ ppartialOrderToken = phoistAcyclic $
                 PMap kvs <- pmatchC n
                 pure $ pelimList (f nftSymbol mint) (pcon PNothing) kvs
   where
-    f :: Term s PCurrencySymbol
+    f ::  Term s PCurrencySymbol
       -> Term s (PValue 'Sorted 'NoGuarantees)
       -> Term s (PBuiltinPair (PAsData PTokenName) (PAsData PInteger))
       -> Term s (PBuiltinList (PBuiltinPair (PAsData PTokenName) (PAsData PInteger)))
@@ -136,7 +136,7 @@ ppartialOrderToken = phoistAcyclic $
 --   tries to find an output containing that NFT.
 --   If found, returns a boolean indicating whether the found output is the first partial order output in the list
 --   and the output itself; otherwise, returns Nothing.
-pcontinuingPartialOrder :: Term s ( PAddress
+pcontinuingPartialOrder ::  Term s ( PAddress
                                :--> PCurrencySymbol
                                :--> PTokenName
                                :--> PValue 'Sorted 'NoGuarantees
@@ -147,7 +147,7 @@ pcontinuingPartialOrder = phoistAcyclic $
     plam $ \ownAddr nftSymbol nftTkName mint outputs ->
         go ownAddr nftSymbol nftTkName mint # outputs # pcon PTrue
   where
-    go :: Term s PAddress
+    go ::  Term s PAddress
        -> Term s PCurrencySymbol
        -> Term s PTokenName
        -> Term s (PValue 'Sorted 'NoGuarantees)
@@ -164,7 +164,7 @@ pcontinuingPartialOrder = phoistAcyclic $
         )
         (\_self -> plam $ \_b -> pcon PNothing)
 
-pgetContainedFeeValue ::
+pgetContainedFeeValue :: 
   Term s ( PPartialOrderContainedFee
       :--> PAssetClass
       :--> PAssetClass
@@ -183,7 +183,7 @@ pgetContainedFeeValue = phoistAcyclic $ plam $ \containedFee offAC askAC
     containedFeeAsk  <- pletC $ getField @"pocfAskedTokens" containedFeeHRec
     pure $ pgetContainedFeeValue' # offAC # askAC # containedFeeLov # containedFeeOff # containedFeeAsk
 
-pgetContainedFeeValue' ::
+pgetContainedFeeValue' :: 
   Term s ( PAssetClass
       :--> PAssetClass
       :--> PAsData PInteger
@@ -194,19 +194,19 @@ pgetContainedFeeValue' ::
 pgetContainedFeeValue' = phoistAcyclic $ plam $ \offAC askAC lov off ask
   -> passetClassValuePositive # plovelace # lov <> passetClassValuePositive # offAC # off <> passetClassValuePositive # askAC # ask
 
-pcheckValidStartTime :: Term s (PPOSIXTimeRange :--> PMaybePPOSIXTimeData :--> PBool)
+pcheckValidStartTime ::  Term s (PPOSIXTimeRange :--> PMaybePPOSIXTimeData :--> PBool)
 pcheckValidStartTime = phoistAcyclic $ plam $ \validRange mstart' ->
   pmatch mstart' $ \case
     PPDNothing _ -> pcon PTrue
     PPDJust rec  -> pcontains # (pFrom # (pfield @"_0" # rec)) # validRange
 
-pcheckValidEndTime :: Term s (PPOSIXTimeRange :--> PMaybePPOSIXTimeData :--> PBool)
+pcheckValidEndTime ::  Term s (PPOSIXTimeRange :--> PMaybePPOSIXTimeData :--> PBool)
 pcheckValidEndTime = phoistAcyclic $ plam $ \validRange mend' ->
   pmatch mend' $ \case
     PPDNothing _ -> pcon PTrue
     PPDJust rec  -> pcontains # (pTo # (pfield @"_0" # rec)) # validRange
 
-pcheckValidFillTime :: Term s PPOSIXTimeRange
+pcheckValidFillTime ::  Term s PPOSIXTimeRange
                     -> Term s PMaybePPOSIXTimeData
                     -> Term s PMaybePPOSIXTimeData
                     -> TermCont s ()

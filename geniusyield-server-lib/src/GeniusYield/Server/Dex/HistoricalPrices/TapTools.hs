@@ -14,7 +14,7 @@ import GeniusYield.Types
 import RIO hiding (logDebug, logInfo)
 import Servant
 
-newtype TapToolsNumIntervals = TapToolsNumIntervals {unTapToolsNumIntervals ∷ Natural}
+newtype TapToolsNumIntervals = TapToolsNumIntervals {unTapToolsNumIntervals :: Natural}
   deriving stock (Eq, Ord, Show)
   deriving newtype (FromHttpApiData, Swagger.ToParamSchema)
 
@@ -35,12 +35,12 @@ type TapToolsPriceHistoryAPI =
     :> QueryParam "numIntervals" TapToolsNumIntervals
     :> Get '[JSON] [TapToolsOHLCV]
 
-throwNoTapToolsKeyError ∷ IO a
+throwNoTapToolsKeyError :: IO a
 throwNoTapToolsKeyError = throwIO $ err500 {errBody = "No API key configured for TapTools."}
 
-handleTapToolsPriceHistoryApi ∷ Ctx → GYAssetClass → TapToolsInterval → Maybe TapToolsNumIntervals → IO [TapToolsOHLCV]
-handleTapToolsPriceHistoryApi ctx token tti (fmap unTapToolsNumIntervals → mttni) = do
+handleTapToolsPriceHistoryApi :: Ctx -> GYAssetClass -> TapToolsInterval -> Maybe TapToolsNumIntervals -> IO [TapToolsOHLCV]
+handleTapToolsPriceHistoryApi ctx token tti (fmap unTapToolsNumIntervals -> mttni) = do
   logInfo ctx $ "Fetching price history. Token: " +|| token ||+ ", interval: " +|| tti ||+ ""
   case ctxTapToolsProvider ctx of
-    Nothing → throwNoTapToolsKeyError
-    Just te → try (tapToolsOHLCV te (Just (TapToolsUnit token)) tti mttni) >>= handleTapToolsError "handleTapToolsPriceHistory"
+    Nothing -> throwNoTapToolsKeyError
+    Just te -> try (tapToolsOHLCV te (Just (TapToolsUnit token)) tti mttni) >>= handleTapToolsError "handleTapToolsPriceHistory"

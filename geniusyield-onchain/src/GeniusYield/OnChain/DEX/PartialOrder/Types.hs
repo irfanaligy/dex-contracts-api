@@ -49,7 +49,7 @@ type PartialOrderFeeOutputRec
      , "pofdSpentUTxORef"  ':= PMaybeData PTxOutRef  -- Here we don't require @PAsData@ wrapper to get @PTryFrom@ instance, i.e., we don't need to put @PMaybeData (PAsData PTxOutRef)@ unlike for @PPOSIXTime@.
      ]
 
-newtype PPartialOrderFeeOutput (s :: S)
+newtype PPartialOrderFeeOutput (s ::  S)
   = PPartialOrderFeeOutput (Term s (PDataRecord PartialOrderFeeOutputRec))
   deriving stock (Generic)
   deriving anyclass (PlutusType, PIsData, PEq, PDataFields, PTryFrom PData)
@@ -64,7 +64,7 @@ type PartialOrderContainedFeeRec
      , "pocfAskedTokens"   ':= PInteger
      ]
 
-newtype PPartialOrderContainedFee (s :: S)
+newtype PPartialOrderContainedFee (s ::  S)
   = PPartialOrderContainedFee (Term s (PDataRecord PartialOrderContainedFeeRec))
   deriving stock (Generic)
   deriving anyclass (PlutusType, PIsData, PEq, PPartialOrd, PDataFields, PTryFrom PData)
@@ -158,7 +158,7 @@ instance DerivePlutusType PPartialOrderDatum where type DPTStrat _ = PlutusTypeD
 instance PTryFrom PData (PAsData PPartialOrderDatum)
 
 -- | Plutarch's `PMaybeData` but specialised to `PPOSIXTime`. This was done to have `PTryFrom PData PMaybePPOSIXTimeData` instance as otherwise we were having instance of `PTryFrom PData (PMaybeData (PAsData PPOSIXTime))`, i.e., needed to add an extra `PAsData` wrapper around `PPOSIXTime`.
-data PMaybePPOSIXTimeData (s :: S)
+data PMaybePPOSIXTimeData (s ::  S)
   = PPDJust (Term s (PDataRecord '["_0" ':= PPOSIXTime]))
   | PPDNothing (Term s (PDataRecord '[]))
   deriving stock (Generic)
@@ -167,7 +167,7 @@ instance DerivePlutusType PMaybePPOSIXTimeData where type DPTStrat _ = PlutusTyp
 instance PTryFrom PData PMaybePPOSIXTimeData
 instance PTryFrom PData (PAsData PMaybePPOSIXTimeData)
 
-data PPartialOrderAction (s :: S)
+data PPartialOrderAction (s ::  S)
   = PPartialCancel (Term s (PDataRecord '[]))
   | PPartialFill (Term s (PDataRecord '["_0" ':= PInteger]))
   | PCompleteFill (Term s (PDataRecord '[]))

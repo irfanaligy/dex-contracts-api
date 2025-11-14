@@ -28,14 +28,14 @@ import           GeniusYield.OnChain.DEX.PartialOrderNFT.Compiled     (optimized
                                                                        optimizedPartialOrderNftPolicyWithTracing)
 import           GeniusYield.OnChain.DEX.PartialOrderNFTV1_1.Compiled
 
-main :: IO ()
+main ::  IO ()
 main = do
     createDirectoryIfMissing False scriptStorage
     runExceptT writeScripts >>= \case
         Left e  -> throwIO . userError $ Txt.unpack e
         Right a -> pure a
 
-writeScripts :: ExceptT Text IO ()
+writeScripts ::  ExceptT Text IO ()
 writeScripts = do
     writeScriptHelper dex'NFTFile optimizedNftPolicy
     writeScriptHelper dex'PartialOrderFile optimizedPartialOrderValidator
@@ -47,9 +47,9 @@ writeScripts = do
     writeScriptHelper dex'PartialOrderConfigFile optimizedPartialOrderConfigValidator
     writeScriptHelper dex'PartialOrderConfigFileTracing optimizedPartialOrderConfigValidatorWithTracing
 
-scriptStorage :: FilePath
+scriptStorage ::  FilePath
 scriptStorage = "geniusyield-common/data/compiled-scripts"
 
-writeScriptHelper :: (ReifyRole rl, ReifyTypenames params) => FilePath -> Either Text (TypedScript rl params) -> ExceptT Text IO ()
+writeScriptHelper ::  (ReifyRole rl, ReifyTypenames params) => FilePath -> Either Text (TypedScript rl params) -> ExceptT Text IO ()
 writeScriptHelper name script = except script
     >>= liftIO . writeEnvelope (scriptStorage </> name) . typedScriptToEnvelope (Txt.pack name)

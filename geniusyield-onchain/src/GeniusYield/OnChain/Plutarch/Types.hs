@@ -12,7 +12,7 @@ import           Ply.Plutarch.Class          (PlyArgOf)
 
 {- | 'PAssetClass' is the plutarch level type for 'AssetClass' defined in "Ledger.Value".
 -}
-newtype PAssetClass (s :: S)
+newtype PAssetClass (s ::  S)
   = PAssetClass
       ( Term
           s

@@ -28,13 +28,13 @@ import           Plutarch.Prelude
 import           GeniusYield.OnChain.Plutarch.Api   (pguardC, pmatchC)
 import           GeniusYield.OnChain.Plutarch.Utils (pparseDatum)
 
-type PSignature :: PType
+type PSignature ::  PType
 type PSignature = PByteString
 
-type PPubKey :: PType
+type PPubKey ::  PType
 type PPubKey = PByteString
 
-newtype PSignedMessage (a :: PType) (s :: S)
+newtype PSignedMessage (a ::  PType) (s ::  S)
   = PSignedMessage ( Term
                        s
                        ( PDataRecord
@@ -48,7 +48,7 @@ newtype PSignedMessage (a :: PType) (s :: S)
 
 instance DerivePlutusType (PSignedMessage a) where type DPTStrat _ = PlutusTypeData
 
-pverifySignedMessage :: forall (s :: S) (a :: PType). PTryFrom PData (PAsData a) =>
+pverifySignedMessage ::  forall (s ::  S) (a ::  PType). PTryFrom PData (PAsData a) =>
   Term s ( PPubKey
     :-->   PSignedMessage a
     :-->   PV2.PTxInfo

@@ -27,32 +27,32 @@ import PlutusTx (
  )
 
 class HasPartialOrderConfigAddr a where
-  getPartialOrderConfigAddr ∷ a → POCVersion → GYAddress
+  getPartialOrderConfigAddr :: a -> POCVersion -> GYAddress
 
 data PartialOrderConfigInfoF addr = PartialOrderConfigInfo
   { -- | Public key hashes of the potential signatories.
-    pociSignatories ∷ ![GYPubKeyHash],
+    pociSignatories :: ![GYPubKeyHash],
     -- | Number of required signatures.
-    pociReqSignatories ∷ !Integer,
+    pociReqSignatories :: !Integer,
     -- | Minting Policy Id of the partial order Nft.
-    pociNftSymbol ∷ !GYMintingPolicyId,
+    pociNftSymbol :: !GYMintingPolicyId,
     -- | Address to which fees are paid.
-    pociFeeAddr ∷ !addr,
+    pociFeeAddr :: !addr,
     -- | Flat fee (in lovelace) paid by the maker.
-    pociMakerFeeFlat ∷ !Integer,
+    pociMakerFeeFlat :: !Integer,
     -- | Proportional fee (in the offered token) paid by the maker.
-    pociMakerFeeRatio ∷ !GYRational,
+    pociMakerFeeRatio :: !GYRational,
     -- | Flat fee (in lovelace) paid by the taker.
-    pociTakerFee ∷ !Integer,
+    pociTakerFee :: !Integer,
     -- | Minimum required deposit (in lovelace).
-    pociMinDeposit ∷ !Integer
+    pociMinDeposit :: !Integer
   }
   deriving stock (Show, Generic, Functor)
 
 type PartialOrderConfigInfo = PartialOrderConfigInfoF GYAddress
 
 instance ToData (PartialOrderConfigInfoF Plutus.Address) where
-  toBuiltinData ∷ PartialOrderConfigInfoF Plutus.Address → BuiltinData
+  toBuiltinData :: PartialOrderConfigInfoF Plutus.Address -> BuiltinData
   toBuiltinData PartialOrderConfigInfo {..} =
     toBuiltinData
       PartialOrderConfigDatum
@@ -67,15 +67,15 @@ instance ToData (PartialOrderConfigInfoF Plutus.Address) where
         }
 
 instance ToData PartialOrderConfigInfo where
-  toBuiltinData ∷ PartialOrderConfigInfo → BuiltinData
+  toBuiltinData :: PartialOrderConfigInfo -> BuiltinData
   toBuiltinData = toBuiltinData . fmap addressToPlutus
 
 instance FromData (PartialOrderConfigInfoF Plutus.Address) where
-  fromBuiltinData ∷ BuiltinData → Maybe (PartialOrderConfigInfoF Plutus.Address)
+  fromBuiltinData :: BuiltinData -> Maybe (PartialOrderConfigInfoF Plutus.Address)
   fromBuiltinData d = do
-    PartialOrderConfigDatum {..} ← fromBuiltinData d
-    signatories ← fromEither $ mapM pubKeyHashFromPlutus pocdSignatories
-    nftSymbol ← fromEither $ mintingPolicyIdFromCurrencySymbol pocdNftSymbol
+    PartialOrderConfigDatum {..} <- fromBuiltinData d
+    signatories <- fromEither $ mapM pubKeyHashFromPlutus pocdSignatories
+    nftSymbol <- fromEither $ mintingPolicyIdFromCurrencySymbol pocdNftSymbol
     pure
       PartialOrderConfigInfo
         { pociSignatories = signatories,
@@ -88,5 +88,5 @@ instance FromData (PartialOrderConfigInfoF Plutus.Address) where
           pociMinDeposit = pocdMinDeposit
         }
    where
-    fromEither ∷ Either e a → Maybe a
+    fromEither :: Either e a -> Maybe a
     fromEither = either (const Nothing) Just

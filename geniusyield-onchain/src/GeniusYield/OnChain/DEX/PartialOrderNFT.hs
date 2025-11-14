@@ -37,7 +37,7 @@ import           GeniusYield.OnChain.Plutarch.Utils         (pceiling, pfindOutp
                                                              pparseDatum')
 import           GeniusYield.OnChain.Plutarch.Value         (passetClass, passetClassValue, pgeq, plovelace)
 
-mkPartialOrderNFTPolicy ::
+mkPartialOrderNFTPolicy :: 
   Term s (PScriptHash
      :--> PAddress
      :--> PAssetClass
@@ -48,7 +48,7 @@ mkPartialOrderNFTPolicy ::
 mkPartialOrderNFTPolicy = plam $ \sh refInputAddr refInputToken mtxOutRef ctx ->
     policy sh refInputAddr refInputToken (pfromData mtxOutRef) ctx
   where
-    policy ::
+    policy :: 
           Term s PScriptHash
       ->  Term s PAddress
       ->  Term s PAssetClass
@@ -90,7 +90,7 @@ mkPartialOrderNFTPolicy = plam $ \sh refInputAddr refInputToken mtxOutRef ctx ->
                                getField @"pocdMinDeposit" markedRefDatumFs    #
                                (mintedTokens_ # ownSymbol # mint)
 
-    validateMinting ::
+    validateMinting :: 
         Term s (PScriptHash
           :-->  PTxOutRef
           :-->  PCurrencySymbol
@@ -123,7 +123,7 @@ mkPartialOrderNFTPolicy = plam $ \sh refInputAddr refInputToken mtxOutRef ctx ->
                 (ptraceError errMsg)
                 ) (ptraceError "minted tokens list should not be empty.") . pto
 
-    checkIfBurning ::
+    checkIfBurning :: 
         Term s (PCurrencySymbol
           :-->  PValue 'Sorted 'NoGuarantees
           :-->  PUnit
@@ -137,7 +137,7 @@ mkPartialOrderNFTPolicy = plam $ \sh refInputAddr refInputToken mtxOutRef ctx ->
             (ptraceError "expected only burning")
             (pconstant ())
 
-    checkOutput :: Term s (PScriptHash
+    checkOutput ::  Term s (PScriptHash
                       :--> PInteger
                       :--> PBuiltinList PV2.PTxOut
                       :--> PMap 'Unsorted PDatumHash PDatum
@@ -173,13 +173,13 @@ mkPartialOrderNFTPolicy = plam $ \sh refInputAddr refInputToken mtxOutRef ctx ->
                                  , "podContainedPayment"
                                  ] od
 
-            (offeredAmount         :: Term _ PInteger)                   <- pletC $ getField @"podOfferedAmount"          odFs
-            (offeredOriginalAmount :: Term _ PInteger)                   <- pletC $ getField @"podOfferedOriginalAmount"  odFs
-            (partialFills          :: Term _ PInteger)                   <- pletC $ getField @"podPartialFills"           odFs
-            (askedPrice            :: Term _ PRationalData)              <- pletC $ getField @"podPrice"                  odFs
-            (containedFee          :: Term _ PPartialOrderContainedFee)  <- pletC $ getField @"podContainedFee"           odFs
-            (containedPayment      :: Term _ PInteger)                   <- pletC $ getField @"podContainedPayment"       odFs
-            (askedPriceN           :: Term _ PInteger)                   <- pletC $ pfield @"numerator" # askedPrice
+            (offeredAmount         ::  Term _ PInteger)                   <- pletC $ getField @"podOfferedAmount"          odFs
+            (offeredOriginalAmount ::  Term _ PInteger)                   <- pletC $ getField @"podOfferedOriginalAmount"  odFs
+            (partialFills          ::  Term _ PInteger)                   <- pletC $ getField @"podPartialFills"           odFs
+            (askedPrice            ::  Term _ PRationalData)              <- pletC $ getField @"podPrice"                  odFs
+            (containedFee          ::  Term _ PPartialOrderContainedFee)  <- pletC $ getField @"podContainedFee"           odFs
+            (containedPayment      ::  Term _ PInteger)                   <- pletC $ getField @"podContainedPayment"       odFs
+            (askedPriceN           ::  Term _ PInteger)                   <- pletC $ pfield @"numerator" # askedPrice
             makerFeeFlatDat                                              <- pletC $ getField @"podMakerLovelaceFlatFee"   odFs
             takerFeeFlatDat                                              <- pletC $ getField @"podTakerLovelaceFlatFee" odFs
 
@@ -240,7 +240,7 @@ mkPartialOrderNFTPolicy = plam $ \sh refInputAddr refInputToken mtxOutRef ctx ->
 
             pure . pconstant $ ()
 
-mintedTokens_ ::
+mintedTokens_ :: 
   Term s (PCurrencySymbol
      :--> PValue 'Sorted 'NoGuarantees
      :--> PMap 'Sorted PTokenName PInteger
