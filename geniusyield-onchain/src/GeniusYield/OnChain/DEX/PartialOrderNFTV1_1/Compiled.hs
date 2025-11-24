@@ -32,13 +32,13 @@ originalPartialOrderNftV1_1Policy ::
   Either Text (TypedScript 'MintingPolicyRole '[ScriptHash, Address, AssetClass])
 originalPartialOrderNftV1_1Policy cnf = toTypedScript cnf mkPartialOrderNFTV1_1Policy'
 
-optimizedPartialOrderNftV1_1Policy ::  Either Text (TypedScript 'MintingPolicyRole '[ScriptHash, Address, AssetClass])
+optimizedPartialOrderNftV1_1Policy :: Either Text (TypedScript 'MintingPolicyRole '[ScriptHash, Address, AssetClass])
 optimizedPartialOrderNftV1_1Policy = Plutonomy.optimizeUPLC <$> originalPartialOrderNftV1_1Policy def
 
-optimizedPartialOrderNftV1_1PolicyWithTracing ::  Either Text (TypedScript 'MintingPolicyRole '[ScriptHash, Address, AssetClass])
+optimizedPartialOrderNftV1_1PolicyWithTracing :: Either Text (TypedScript 'MintingPolicyRole '[ScriptHash, Address, AssetClass])
 optimizedPartialOrderNftV1_1PolicyWithTracing = Plutonomy.optimizeUPLC <$> originalPartialOrderNftV1_1Policy def{tracingMode = desiredTracingMode}
 
-mkPartialOrderNFTV1_1Policy' ::  ClosedTerm (PScriptHash :--> PAddress :--> PAssetClass :--> PV2.PMintingPolicy)
+mkPartialOrderNFTV1_1Policy' :: ClosedTerm (PScriptHash :--> PAddress :--> PAssetClass :--> PV2.PMintingPolicy)
 mkPartialOrderNFTV1_1Policy' = plam $ \sh refInputAddr refInputToken redm ctx ->
   popaque $
     mkPartialOrderNFTV1_1Policy

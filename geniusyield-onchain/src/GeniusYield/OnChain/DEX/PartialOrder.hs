@@ -38,7 +38,7 @@ import           GeniusYield.OnChain.Plutarch.Value         (passetClass, passet
                                                              pgeq, plovelace, psubtractValue, pvalTotalEntries)
 import           Plutarch.Unsafe                            (punsafeCoerce)
 
-mkPartialOrderValidator ::  forall s. Term s
+mkPartialOrderValidator :: forall s. Term s
                           (    PAddress
                           :--> PAssetClass
                           :--> PPartialOrderDatum
@@ -84,7 +84,7 @@ mkPartialOrderValidator
         PJust ownInput   <- pmatchC $ pfindOwnInput # getField @"inputs" info # ownRef
         nftTkName        <- pletC $ getField @"podNFT" odFs
         ownInpUtxo       <- pletFieldsC @["value", "address"] $ pfield @"resolved" # ownInput
-        valueIn ::  Term _ (PValue 'Sorted 'Positive)
+        valueIn :: Term _ (PValue 'Sorted 'Positive)
                          <- pletC $ getField @"value" ownInpUtxo
         markedRefDatum   <- pletC $ pfindMarkedRefInput # getField @"referenceInputs" info # refInputAddr # refInputToken
         markedRefDatumFs <- pletFieldsC
@@ -106,9 +106,9 @@ mkPartialOrderValidator
         askAC           <- pletC $ getField @"podAskedAsset" odFs
         podPrice        <- pletC $ getField @"podPrice" odFs
         ownerAddr       <- pletC $ getField @"podOwnerAddr" odFs
-        curContainedFee ::  Term _ PPartialOrderContainedFee
+        curContainedFee :: Term _ PPartialOrderContainedFee
                         <- pletC $ getField @"podContainedFee" odFs
-        (priceInteger ::  Term s (PInteger :--> PInteger))
+        (priceInteger :: Term s (PInteger :--> PInteger))
                         <- pletC $ plam $
             \amt ->
               pceiling #$
@@ -121,7 +121,7 @@ mkPartialOrderValidator
                * Initial deposit.
                * Collected fees.
         -}
-        curPaymentWithDeposit ::  Term s (PValue 'Sorted 'Positive :--> PValue 'Sorted 'NoGuarantees)
+        curPaymentWithDeposit :: Term s (PValue 'Sorted 'Positive :--> PValue 'Sorted 'NoGuarantees)
                         <- pletC $ plam $
             \contFeeVal ->
               let toSubtract = (passetClassValuePositive # (passetClass # nftSymbol # nftTkName) # pdata 1) <> (passetClassValuePositive # offAC # pdata offeredAmount) <> contFeeVal
@@ -149,7 +149,7 @@ mkPartialOrderValidator
                 pguardC "insufficient payment" $
                     pgeq # pforgetPositive actualPayment # expectedPayment
 
-                (partialFills ::  Term _ PInteger) <- pletC $ getField @"podPartialFills" odFs
+                (partialFills :: Term _ PInteger) <- pletC $ getField @"podPartialFills" odFs
                 pmatchC (partialFills #== 0 #|| curContainedFee #== mempty) >>= \case  -- Note that later we subtract from this @curContainedFee@ to know for the required contained fee, but if required contained fee is @mempty@ then it can be mathematically shown that @curContainedFee@ is also @mempty@.
 
                     PTrue  -> pure . pcon $ PUnit  -- no partial fills or no fees, maker fees go back to the maker
@@ -168,7 +168,7 @@ mkPartialOrderValidator
                                 PNothing           -> pcon PFalse
                                 PJust mentionedFee ->
 
-                                  let originalOfferedAmount ::  Term _ PInteger = getField @"podOfferedOriginalAmount" odFs
+                                  let originalOfferedAmount :: Term _ PInteger = getField @"podOfferedOriginalAmount" odFs
                                       feeToRefund = pfloor #$ (PRational.pfromInteger # offeredAmount) * pcon (PRational.PRational (pfromData feeOff) (punsafeCoerce originalOfferedAmount))  -- We are using `punsafeCoerce` instead of `ptryPositive` as our NFT policy checks that original offered amount is positive.
                                   in ((pgetContainedFeeValue' # offAC # askAC # feeLov # pdata (pfromData feeOff - feeToRefund) # feeAsk) #<= mentionedFee)
 
@@ -263,7 +263,7 @@ mkPartialOrderValidator
 
                         outFs                   <- pletFieldsC @'["value", "datum"] out
                         actualDatum             <- pletC $ presolveDatum # getField @"datum" outFs # datums
-                        actualValueOut ::  Term _ (PValue 'Sorted 'Positive)
+                        actualValueOut :: Term _ (PValue 'Sorted 'Positive)
                                                 <- pletC $ getField @"value" outFs
                         diffActualExpectedValue <- pletC $ psubtractValue # pforgetPositive actualValueOut # expectedValueOut  -- Note that all amounts in @diffActualExpectedValue@ are @>= 0@ by courtesy of a check done shortly later.
                         additionalAskTokens     <- pletC $ passetClassValueOf # diffActualExpectedValue # askAC

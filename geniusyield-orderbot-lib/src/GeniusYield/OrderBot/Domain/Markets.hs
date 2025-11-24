@@ -49,15 +49,15 @@ instance FromJSON OrderAssetPair where
 instance ToHttpApiData OrderAssetPair where
   toUrlPiece OAssetPair {..} = toUrlPiece currencyAsset <> "_" <> toUrlPiece commodityAsset
 
--- >>> parseUrlPiece "f43a62fdc3965df486de8a0d32fe800963589c41b38946602a0dc535.41474958_f43a62fdc3965df486de8a0d32fe800963589c41b38946602a0dc535.41474958" ::  Either Text OrderAssetPair
+-- >>> parseUrlPiece "f43a62fdc3965df486de8a0d32fe800963589c41b38946602a0dc535.41474958_f43a62fdc3965df486de8a0d32fe800963589c41b38946602a0dc535.41474958" :: Either Text OrderAssetPair
 -- Right (OAssetPair {currencyAsset = GYToken "f43a62fdc3965df486de8a0d32fe800963589c41b38946602a0dc535" "AGIX", commodityAsset = GYToken "f43a62fdc3965df486de8a0d32fe800963589c41b38946602a0dc535" "AGIX"})
--- >>> parseUrlPiece "_f43a62fdc3965df486de8a0d32fe800963589c41b38946602a0dc535.41474958" ::  Either Text OrderAssetPair
+-- >>> parseUrlPiece "_f43a62fdc3965df486de8a0d32fe800963589c41b38946602a0dc535.41474958" :: Either Text OrderAssetPair
 -- Right (OAssetPair {currencyAsset = GYLovelace, commodityAsset = GYToken "f43a62fdc3965df486de8a0d32fe800963589c41b38946602a0dc535" "AGIX"})
--- >>> parseUrlPiece "f43a62fdc3965df486de8a0d32fe800963589c41b38946602a0dc535.41474958_" ::  Either Text OrderAssetPair
+-- >>> parseUrlPiece "f43a62fdc3965df486de8a0d32fe800963589c41b38946602a0dc535.41474958_" :: Either Text OrderAssetPair
 -- Right (OAssetPair {currencyAsset = GYToken "f43a62fdc3965df486de8a0d32fe800963589c41b38946602a0dc535" "AGIX", commodityAsset = GYLovelace})
--- >>> parseUrlPiece "_" ::  Either Text OrderAssetPair
+-- >>> parseUrlPiece "_" :: Either Text OrderAssetPair
 -- Right (OAssetPair {currencyAsset = GYLovelace, commodityAsset = GYLovelace})
--- >>> parseUrlPiece "" ::  Either Text OrderAssetPair
+-- >>> parseUrlPiece "" :: Either Text OrderAssetPair
 -- Right (OAssetPair {currencyAsset = GYLovelace, commodityAsset = GYLovelace})
 instance FromHttpApiData OrderAssetPair where
   parseUrlPiece t = do

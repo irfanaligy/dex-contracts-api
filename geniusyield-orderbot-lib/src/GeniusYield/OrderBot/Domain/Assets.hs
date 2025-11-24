@@ -57,7 +57,7 @@ data AssetDetails = AssetDetails
     (FromJSON, ToJSON)
     via CustomJSON '[FieldLabelModifier '[StripPrefix AssetDetailsPrefix, CamelToSnake]] AssetDetails
 
--- >>> Aeson.encode (Swagger.toSchema (Proxy ::  Proxy AssetDetails))
+-- >>> Aeson.encode (Swagger.toSchema (Proxy :: Proxy AssetDetails))
 -- "{\"description\":\"Asset details.\",\"required\":[\"asset\"],\"properties\":{\"asset\":{\"$ref\":\"#/definitions/GYAssetClass\"},\"asset_ticker\":{\"$ref\":\"#/definitions/AssetTicker\"},\"asset_decimals\":{\"$ref\":\"#/definitions/AssetDecimals\"}},\"type\":\"object\"}"
 instance Swagger.ToSchema AssetDetails where
   declareNamedSchema =

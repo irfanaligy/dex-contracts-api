@@ -34,7 +34,7 @@ data Market = Market
     via CustomJSON '[FieldLabelModifier '[CamelToSnake]] Market
 
 {- |
->>> Aeson.encode (Swagger.toSchema (Proxy ::  Proxy Market))
+>>> Aeson.encode (Swagger.toSchema (Proxy :: Proxy Market))
 "{\"description\":\"Market information\",\"required\":[\"market_id\",\"base_asset\",\"target_asset\"],\"properties\":{\"market_id\":{\"$ref\":\"#/definitions/MarketId\"},\"base_asset\":{\"$ref\":\"#/definitions/BaseAsset\"},\"target_asset\":{\"$ref\":\"#/definitions/TargetAsset\"}},\"type\":\"object\"}"
 -}
 instance Swagger.ToSchema Market where

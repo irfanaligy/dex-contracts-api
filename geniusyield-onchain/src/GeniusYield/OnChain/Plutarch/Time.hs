@@ -42,7 +42,7 @@ pcontains = phoistAcyclic $ plam $ \interval1 interval2
 
 
 -- | 'plowerbound' is plutarch level function of 'lowerBound'.
-plowerbound ::  Term s (PPOSIXTime :--> PLowerBound PPOSIXTime)
+plowerbound :: Term s (PPOSIXTime :--> PLowerBound PPOSIXTime)
 plowerbound = phoistAcyclic $ plam $ \a
   -> let
         lbValue = pcon $ PFinite (pdcons @"_0" # pdata a # pdnil)
@@ -54,7 +54,7 @@ plowerbound = phoistAcyclic $ plam $ \a
 
 
 -- | 'pupperBound' is plutarch level function of 'upperBound'.
-pupperBound ::  Term s (PPOSIXTime :--> PUpperBound PPOSIXTime)
+pupperBound :: Term s (PPOSIXTime :--> PUpperBound PPOSIXTime)
 pupperBound = phoistAcyclic $ plam $ \a
   -> let
         ubValue = pcon $ PFinite (pdcons @"_0" # pdata a # pdnil)

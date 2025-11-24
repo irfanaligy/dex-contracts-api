@@ -54,20 +54,20 @@ library
   import:          common
   hs-source-dirs:  src
   exposed-modules:
-    GeniusYield.Api.Dex.Constants
-    GeniusYield.Api.Dex.PartialOrder
-    GeniusYield.Api.Dex.PartialOrderConfig
-    GeniusYield.Api.Dex.Types
-    GeniusYield.Scripts
-    GeniusYield.Scripts.Common
-    GeniusYield.Scripts.Dex
-    GeniusYield.Scripts.Dex.Data
-    GeniusYield.Scripts.Dex.Nft
-    GeniusYield.Scripts.Dex.PartialOrder
-    GeniusYield.Scripts.Dex.PartialOrderConfig
+    GeniusYield.Api.Dex.Constants -- config-dex.json
+    GeniusYield.Api.Dex.PartialOrder -- same
+    GeniusYield.Api.Dex.PartialOrderConfig -- same
+    GeniusYield.Api.Dex.Types -- user + query monad
+    GeniusYield.Scripts -- (only export)
+    GeniusYield.Scripts.Common -- GeniusYield.Scripts.Internal
+    GeniusYield.Scripts.Dex -- (only export)
+    GeniusYield.Scripts.Dex.Data -- (only export)
+    GeniusYield.Scripts.Dex.Nft -- GeniusYield.Scripts.Dex.Nft
+    GeniusYield.Scripts.Dex.PartialOrder -- GeniusYield.Scripts.Dex.PartialOrder
+    GeniusYield.Scripts.Dex.PartialOrderConfig -- GeniusYield.Scripts.Dex.PartialOrderConfig
     GeniusYield.Scripts.Dex.PartialOrderConfig.Internal
-    GeniusYield.Scripts.Dex.PartialOrderNft
-    GeniusYield.Scripts.Dex.Version
+    GeniusYield.Scripts.Dex.PartialOrderNft -- GeniusYield.Scripts.Dex.PartialOrderNFT
+    GeniusYield.Scripts.Dex.Version -- GeniusYield.Scripts.Dex.Version
 
   build-depends:
     , aeson

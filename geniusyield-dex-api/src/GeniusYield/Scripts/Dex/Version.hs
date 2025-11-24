@@ -22,7 +22,7 @@ import GeniusYield.Imports ((&))
 
 {- | Version of the family of partial order contracts.
 
->>> maxBound ::  POCVersion
+>>> maxBound :: POCVersion
 POCVersion1_1
 -}
 data POCVersion = POCVersion1 | POCVersion1_1

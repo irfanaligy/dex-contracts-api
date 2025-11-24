@@ -137,7 +137,7 @@ mkPartialOrderNFTPolicy = plam $ \sh refInputAddr refInputToken mtxOutRef ctx ->
             (ptraceError "expected only burning")
             (pconstant ())
 
-    checkOutput ::  Term s (PScriptHash
+    checkOutput :: Term s (PScriptHash
                       :--> PInteger
                       :--> PBuiltinList PV2.PTxOut
                       :--> PMap 'Unsorted PDatumHash PDatum
@@ -173,13 +173,13 @@ mkPartialOrderNFTPolicy = plam $ \sh refInputAddr refInputToken mtxOutRef ctx ->
                                  , "podContainedPayment"
                                  ] od
 
-            (offeredAmount         ::  Term _ PInteger)                   <- pletC $ getField @"podOfferedAmount"          odFs
-            (offeredOriginalAmount ::  Term _ PInteger)                   <- pletC $ getField @"podOfferedOriginalAmount"  odFs
-            (partialFills          ::  Term _ PInteger)                   <- pletC $ getField @"podPartialFills"           odFs
-            (askedPrice            ::  Term _ PRationalData)              <- pletC $ getField @"podPrice"                  odFs
-            (containedFee          ::  Term _ PPartialOrderContainedFee)  <- pletC $ getField @"podContainedFee"           odFs
-            (containedPayment      ::  Term _ PInteger)                   <- pletC $ getField @"podContainedPayment"       odFs
-            (askedPriceN           ::  Term _ PInteger)                   <- pletC $ pfield @"numerator" # askedPrice
+            (offeredAmount         :: Term _ PInteger)                   <- pletC $ getField @"podOfferedAmount"          odFs
+            (offeredOriginalAmount :: Term _ PInteger)                   <- pletC $ getField @"podOfferedOriginalAmount"  odFs
+            (partialFills          :: Term _ PInteger)                   <- pletC $ getField @"podPartialFills"           odFs
+            (askedPrice            :: Term _ PRationalData)              <- pletC $ getField @"podPrice"                  odFs
+            (containedFee          :: Term _ PPartialOrderContainedFee)  <- pletC $ getField @"podContainedFee"           odFs
+            (containedPayment      :: Term _ PInteger)                   <- pletC $ getField @"podContainedPayment"       odFs
+            (askedPriceN           :: Term _ PInteger)                   <- pletC $ pfield @"numerator" # askedPrice
             makerFeeFlatDat                                              <- pletC $ getField @"podMakerLovelaceFlatFee"   odFs
             takerFeeFlatDat                                              <- pletC $ getField @"podTakerLovelaceFlatFee" odFs
 

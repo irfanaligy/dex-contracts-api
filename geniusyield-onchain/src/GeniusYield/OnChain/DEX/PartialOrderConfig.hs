@@ -26,7 +26,7 @@ import           Plutarch.Prelude                           (PAsData, PBool (..)
                                                              PMaybe (..), PPartialOrd ((#<=)), PUnit (..), getField,
                                                              pfromData, plength, pmatch)
 
-mkPartialOrderConfigValidator ::  forall s. Term s
+mkPartialOrderConfigValidator :: forall s. Term s
                             (    PAssetClass
                             :--> PPartialOrderConfigDatum
                             :--> PUnit
@@ -85,7 +85,7 @@ mkPartialOrderConfigValidator
 
         -- @pocdSignatories@ are unique and their number lies b/w 1 & 10 (inclusive).
         -- Note that it is possible to dissolve multi-sig by giving a single signatory for which no corresponding key is known.
-        newSigs ::  Term _ (PBuiltinList (PAsData PPubKeyHash)) <- pletC $ getField @"pocdSignatories" newDatumFs
+        newSigs :: Term _ (PBuiltinList (PAsData PPubKeyHash)) <- pletC $ getField @"pocdSignatories" newDatumFs
         pguardC "duplicate signatories" $ pallUnique # newSigs
         -- We are iterating over list of signatories twice (earlier when determining duplicates and now, to determine length) but performance is not a concern here.
         newSigsNum <- pletC $ plength # newSigs
@@ -93,7 +93,7 @@ mkPartialOrderConfigValidator
         pguardC "non-positive signatories" $ 1 #<= newSigsNum
 
         -- @pocdReqSignatories@ is positive and not more than the number of signatories.
-        newReqSigs ::  Term _ PInteger <- pletC $ getField @"pocdReqSignatories" newDatumFs
+        newReqSigs :: Term _ PInteger <- pletC $ getField @"pocdReqSignatories" newDatumFs
         pguardC "non-positive number of required signatories" $ 1 #<= newReqSigs
         pguardC "too many required signatories" $ newReqSigs #<= newSigsNum
 
@@ -110,19 +110,19 @@ mkPartialOrderConfigValidator
 
         -- @pocdMakerFeeFlat@, @pocdTakerFee@ and @pocdMinDeposit@ are all non-negative and not more than 1000 ADA.
         let lovelaceThreshold = 1000_000_000
-        newMakerFeeFlat ::  Term _ PInteger <- pletC $ getField @"pocdMakerFeeFlat" newDatumFs
+        newMakerFeeFlat :: Term _ PInteger <- pletC $ getField @"pocdMakerFeeFlat" newDatumFs
         pguardC "negative flat maker fee" $ 0 #<= newMakerFeeFlat
         pguardC "high flat maker fee" $ newMakerFeeFlat #<= lovelaceThreshold
-        newTakerFee ::  Term _ PInteger <- pletC $ getField @"pocdTakerFee" newDatumFs
+        newTakerFee :: Term _ PInteger <- pletC $ getField @"pocdTakerFee" newDatumFs
         pguardC "negative taker fee" $ 0 #<= newTakerFee
         pguardC "high taker fee" $ newTakerFee #<= lovelaceThreshold
-        newMinDeposit ::  Term _ PInteger <- pletC $ getField @"pocdMinDeposit" newDatumFs
+        newMinDeposit :: Term _ PInteger <- pletC $ getField @"pocdMinDeposit" newDatumFs
         pguardC "negative min ada deposit" $ 0 #<= newMinDeposit
         pguardC "high min ada deposit" $ newMinDeposit #<= lovelaceThreshold
 
         -- @pocdMakerFeeRatio@ is non-negative and not more than 1.
-        newMakerFeeRatio ::  Term _ PRationalData <- pletC $ getField @"pocdMakerFeeRatio" newDatumFs
-        pguardC "negative maker fee ratio" $ 0 #<= (pfield @"numerator" # newMakerFeeRatio ::  Term _ PInteger)
+        newMakerFeeRatio :: Term _ PRationalData <- pletC $ getField @"pocdMakerFeeRatio" newDatumFs
+        pguardC "negative maker fee ratio" $ 0 #<= (pfield @"numerator" # newMakerFeeRatio :: Term _ PInteger)
         -- Module @Plutarch.Extra.RationalData@ does not export constructor for @PRationalData@, so comparison is performed using `prationalFromData`.
         pguardC "high maker fee ratio" $ prationalFromData # newMakerFeeRatio #<= 1
 

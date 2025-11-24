@@ -143,10 +143,10 @@ newtype GYBalance = GYBalance {unGYBalance :: GYValue}
   deriving newtype (Eq, Ord, Semigroup, Monoid)
 
 {- |
-
 >>> LBS8.putStrLn . Aeson.encode . GYBalance . valueFromList $ [(GYLovelace,22),(GYToken "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef" "GOLD",101)]
 {"lovelace":"22","ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef.474f4c44":"101"}
 -}
+
 instance Aeson.ToJSON GYBalance where
   toJSON = Aeson.object . map (RIO.uncurry assetPairToKVT) . valueToList . unGYBalance
   toEncoding = Aeson.pairs . foldMap (RIO.uncurry assetPairToKVT) . valueToList . unGYBalance

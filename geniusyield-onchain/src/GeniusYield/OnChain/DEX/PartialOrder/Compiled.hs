@@ -24,15 +24,15 @@ import           GeniusYield.OnChain.Plutarch.Api     (PAssetClass)
 import           GeniusYield.OnChain.Utils            (desiredTracingMode)
 import           GeniusYield.Plutonomy                ()
 
-originalPartialOrderValidator ::  Config -> Either Text (TypedScript 'ValidatorRole '[Address, AssetClass])
+originalPartialOrderValidator :: Config -> Either Text (TypedScript 'ValidatorRole '[Address, AssetClass])
 originalPartialOrderValidator cnf = toTypedScript cnf mkPartialOrderValidator'
 
-optimizedPartialOrderValidator ::  Either
+optimizedPartialOrderValidator :: Either
   Text
   (TypedScript 'ValidatorRole '[Address, AssetClass])
 optimizedPartialOrderValidator = Plutonomy.optimizeUPLC <$> originalPartialOrderValidator def
 
-optimizedPartialOrderValidatorWithTracing ::  Either
+optimizedPartialOrderValidatorWithTracing :: Either
   Text
   (TypedScript 'ValidatorRole '[Address, AssetClass])
 optimizedPartialOrderValidatorWithTracing = Plutonomy.optimizeUPLC <$> originalPartialOrderValidator def {tracingMode = desiredTracingMode}

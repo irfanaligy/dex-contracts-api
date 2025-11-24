@@ -123,7 +123,7 @@ phasSignatures =
         # 0
 
 -- | 'toDatum' Converts any 'PType' that has instance of 'PIsData' to 'PDatum'.
-toDatum ::  forall a s. PIsData a => Term s a -> Term s PDatum
+toDatum :: forall a s. PIsData a => Term s a -> Term s PDatum
 toDatum = pcon . PDatum . pforgetData . pdata
 
 -- | 'pfindTxOutByTxOutRef' searches for 'PTxInInfo' given 'PTxOutRef' and returns 'PTxOut' of the
@@ -143,7 +143,7 @@ pfindTxOutByTxOutRef = phoistAcyclic $ plam $ \txOutRef inputs
               # inputs
 
 -- errors if the purpose isn't "Minting"
-pownSymbol ::  Term s (PV2.PScriptContext :--> PCurrencySymbol)
+pownSymbol :: Term s (PV2.PScriptContext :--> PCurrencySymbol)
 pownSymbol = phoistAcyclic $ plam $ \ctx -> unTermCont $ do
   PMinting csRec <- pmatchC $ pfield @"purpose" # ctx
   pure $ pfield @"_0" # csRec
@@ -163,7 +163,7 @@ pexpectedTokenName = phoistAcyclic $ plam $ \txOutRef
       is present in any of the output 'PTxOut' of `PTxInfo`.
       Returns 'mempty' is nothing is paid.
 -}
-ppaidValue ::  PIsData a => Term s (a
+ppaidValue :: PIsData a => Term s (a
   :--> PAddress
   :--> PMap 'PMap.Unsorted PDatumHash PDatum
   :--> PBuiltinList PV2.PTxOut
@@ -185,7 +185,7 @@ ppaidValue = phoistAcyclic $ ppaidValueCore $ \f ->
 
   __NOTE:__ It's difference with respect to `ppaidValue` is that it supports matching against both inlined or non-inlined datum.
 -}
-ppaidValuePlusInline ::  PIsData a
+ppaidValuePlusInline :: PIsData a
                      => Term s (
                              a
                         :--> PAddress
@@ -202,7 +202,7 @@ ppaidValuePlusInline = phoistAcyclic $ ppaidValueCorePlusInline $ \f ->
     (const mempty)
 
 -- | Like 'ppaidValue', but sums up 'PValue's from multiple UTxOs if there are multiple matches.
-ppaidValueSum ::  PIsData a => Term s (a
+ppaidValueSum :: PIsData a => Term s (a
   :--> PAddress
   :--> PMap 'PMap.Unsorted PDatumHash PDatum
   :--> PBuiltinList PV2.PTxOut
@@ -217,7 +217,7 @@ ppaidValueSum = phoistAcyclic $ ppaidValueCore $ \f ->
         )
     # mempty
 
-ppaidValueCore ::  PIsData a
+ppaidValueCore :: PIsData a
                => (Term s (PV2.PTxOut :--> PBool)
                -> Term s (PBuiltinList PV2.PTxOut :--> PValue 'Sorted 'Positive))
                -> Term s (a
@@ -250,7 +250,7 @@ ppaidValueCore go = plam $ \ref addr datums -> unTermCont $ do
 
   pure $ go f
 
-ppaidValueCorePlusInline ::  PIsData a
+ppaidValueCorePlusInline :: PIsData a
                          => (Term s (PV2.PTxOut :--> PBool)
                          -> Term s (PBuiltinList PV2.PTxOut :--> PValue 'Sorted 'Positive))
                          -> Term s (a
@@ -287,7 +287,7 @@ pmintedTokens = phoistAcyclic $ plam $ \cs tn info
       PJust tnMap <-  pmatchC $ PMap.plookup # cs # mint
       return (pfromMaybe # 0 # (PMap.plookup # tn # tnMap))
 
-pdecodeInlineDatum ::  forall a s. (PTryFrom PData (PAsData a), PIsData a)
+pdecodeInlineDatum :: forall a s. (PTryFrom PData (PAsData a), PIsData a)
                    => Term s (PV2.POutputDatum :--> a)
 pdecodeInlineDatum = phoistAcyclic $
     plam $ \od ->
@@ -297,7 +297,7 @@ pdecodeInlineDatum = phoistAcyclic $
                     (pfromData . ptryFromData @a . pto . pfromData) datumResolved
             _                      -> ptraceError "expected inline datum"
 
-presolveInlineDatum ::  Term s (PV2.POutputDatum :--> PDatum)
+presolveInlineDatum :: Term s (PV2.POutputDatum :--> PDatum)
 presolveInlineDatum = phoistAcyclic $
   plam $ \od ->
     pmatch od $ \case

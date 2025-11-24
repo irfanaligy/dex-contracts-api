@@ -44,12 +44,12 @@ import qualified PlutusTx.Monoid
 -- >>> import qualified PlutusTx
 -- >>> import Plutarch.Unsafe (punsafeCoerce)
 --
--- >>> let tokenACS ::  PlutusTx.CurrencySymbol = "12345678912345678912345678912345678912345678912345678912"
--- >>> let tokenAN ::  PlutusTx.TokenName = "tokenA"
+-- >>> let tokenACS :: PlutusTx.CurrencySymbol = "12345678912345678912345678912345678912345678912345678912"
+-- >>> let tokenAN :: PlutusTx.TokenName = "tokenA"
 -- >>> let tokenA = PlutusTx.assetClass tokenACS tokenAN
 --
--- >>> let tokenBCS ::  PlutusTx.CurrencySymbol = "12345678912345678912345678912345678912345678912345678913"
--- >>> let tokenBN ::  PlutusTx.TokenName = "tokenB"
+-- >>> let tokenBCS :: PlutusTx.CurrencySymbol = "12345678912345678912345678912345678912345678912345678913"
+-- >>> let tokenBN :: PlutusTx.TokenName = "tokenB"
 -- >>> let tokenB = PlutusTx.assetClass tokenBCS tokenBN
 --
 -- >>> let valA = PlutusTx.assetClassValue tokenA 123456789
@@ -57,7 +57,7 @@ import qualified PlutusTx.Monoid
 -- >>> let valB = PlutusTx.assetClassValue tokenB 123456789
 --
 -- >>> :{
---   f ::  Term s (PValue 'Sorted 'NoGuarantees :--> PValue 'Sorted 'NoGuarantees :--> PValue 'Sorted 'NoGuarantees)
+--   f :: Term s (PValue 'Sorted 'NoGuarantees :--> PValue 'Sorted 'NoGuarantees :--> PValue 'Sorted 'NoGuarantees)
 --   f = phoistAcyclic $ plam $ \v1 v2 -> v1 <> v2
 -- :}
 --
@@ -69,14 +69,14 @@ import qualified PlutusTx.Monoid
 -- FIXME: Eventually there should be a utility function in upstream Plutarch
 --        for casting values to NoGuarantees. When that function exists,
 --        replace the PUNSAFE.punsafeCoerce with it
-psubtractValue ::  Term s
+psubtractValue :: Term s
           ( PValue 'Sorted anyG
     :-->    PValue 'Sorted anyG
     :-->    PValue 'Sorted 'NoGuarantees)
 psubtractValue = phoistAcyclic $ plam $ \v1 v2 ->
   PValue.punionWith # plam (+)
    # v1
-   # PlutusTx.Monoid.inv (PUNSAFE.punsafeCoerce v2 ::  Term _ (PValue 'Sorted 'NoGuarantees))
+   # PlutusTx.Monoid.inv (PUNSAFE.punsafeCoerce v2 :: Term _ (PValue 'Sorted 'NoGuarantees))
 
 {- | 'passetClassValueOf' is the plutarch level function that is similar to 'assetClassValueOf'
       defined in "Ledger". 'passetClassValueOf' returns 'PInteger' if the given 'PAssetClass'
@@ -148,21 +148,21 @@ psingletonPositiveData = phoistAcyclic $
       )
 
 -- | Check if a 'PValue' is non negative (all amounts are greater than equal to 0).
-pisNonNegative ::  forall any s. (forall s'. Semigroup (Term s' (PValue 'Sorted any))) => Term s (PValue 'Sorted any :--> PBool)
+pisNonNegative :: forall any s. (forall s'. Semigroup (Term s' (PValue 'Sorted any))) => Term s (PValue 'Sorted any :--> PBool)
 pisNonNegative = phoistAcyclic $ plam $ \x -> PMap.pall # plam (\submap -> PMap.pall # plam (0 #<=) # submap) # pto x
 
-passetClass ::  Term s (PCurrencySymbol :--> PTokenName :--> PAssetClass)
+passetClass :: Term s (PCurrencySymbol :--> PTokenName :--> PAssetClass)
 passetClass = phoistAcyclic $
     plam $ \cs tk ->
         pcon $ PAssetClass $ pdcons @"currencySymbol" # pdata cs #$ pdcons @"tokenName" # pdata tk # pdnil
 
-plovelace ::  ClosedTerm PAssetClass
+plovelace :: ClosedTerm PAssetClass
 plovelace = passetClass # pconstant adaSymbol # pconstant adaToken
 
-pgeq ::  Term s (PValue 'Sorted any :--> PValue 'Sorted any :--> PBool)
+pgeq :: Term s (PValue 'Sorted any :--> PValue 'Sorted any :--> PBool)
 pgeq = phoistAcyclic $ plam $ \v1 v2 -> pisNonNegative #$ psubtractValue # v1 # v2
 
-pleq ::  Term s (PValue 'Sorted any :--> PValue 'Sorted any :--> PBool)
+pleq :: Term s (PValue 'Sorted any :--> PValue 'Sorted any :--> PBool)
 pleq = phoistAcyclic $ plam $ \v1 v2 -> pgeq # v2 # v1
 
 -- | Gives the total entries present in the value. Note that logic of this function requires @Positive@ guarantee.
@@ -179,7 +179,7 @@ pleq = phoistAcyclic $ plam $ \v1 v2 -> pgeq # v2 # v1
 -- >>> Run.evalT $ pvalTotalEntries # punsafeCoerce (pconstant (valA <> valA' <> valB))
 -- Right (Script {unScript = Program {_progAnn = (), _progVer = Version () 1 0 0, _progTerm = Constant () (Some (ValueOf DefaultUniInteger 3))}},ExBudget {exBudgetCPU = ExCPU 9025215, exBudgetMemory = ExMemory 27018},[])
 --
-pvalTotalEntries ::  Term s (PValue 'Sorted 'Positive :--> PInteger)
+pvalTotalEntries :: Term s (PValue 'Sorted 'Positive :--> PInteger)
 pvalTotalEntries = phoistAcyclic $ plam $ \v -> List.pfoldl # f # 0 # pto (pto v)
   where
     f = plam $ \acc tokenMap' -> acc + (List.plength #$ pto (pfromData $ psndBuiltin # tokenMap'))
