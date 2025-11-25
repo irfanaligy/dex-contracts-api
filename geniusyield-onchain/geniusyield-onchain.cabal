@@ -37,6 +37,8 @@ library
     GeniusYield.OnChain.DEX.PartialOrder.Types
     GeniusYield.OnChain.DEX.PartialOrderConfig
     GeniusYield.OnChain.DEX.PartialOrderConfig.Compiled
+    GeniusYield.OnChain.DEX.TwoWayOrderConfig
+    GeniusYield.OnChain.DEX.TwoWayOrderConfig.Compiled
     GeniusYield.OnChain.DEX.PartialOrderNFT
     GeniusYield.OnChain.DEX.PartialOrderNFT.Compiled
     GeniusYield.OnChain.DEX.PartialOrderNFTV1_1
