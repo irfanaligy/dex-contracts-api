@@ -8,6 +8,8 @@ module GeniusYield.OnChain.Common.Scripts
     , dex'PartialOrderNFTV1_1FileTracing
     , dex'PartialOrderConfigFile
     , dex'PartialOrderConfigFileTracing
+    , dex'TwoWayOrderConfigFile
+    , dex'TwoWayOrderConfigFileTracing
     ) where
 
 dex'NFTFile :: FilePath
@@ -36,3 +38,9 @@ dex'PartialOrderConfigFile = "DEX.PartialOrderConfig"
 
 dex'PartialOrderConfigFileTracing :: FilePath
 dex'PartialOrderConfigFileTracing = "DEX.PartialOrderConfigTracing"
+
+dex'TwoWayOrderConfigFile :: FilePath
+dex'TwoWayOrderConfigFile = "DEX.TwoWayOrderConfig"
+
+dex'TwoWayOrderConfigFileTracing :: FilePath
+dex'TwoWayOrderConfigFileTracing = "DEX.TwoWayOrderConfigTracing"

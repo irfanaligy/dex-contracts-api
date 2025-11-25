@@ -3,30 +3,24 @@
 
 module Main where
 
-import           Control.Exception                                    (throwIO)
-import           Control.Monad.IO.Class                               (liftIO)
-import           Control.Monad.Trans.Except
-import           Data.Text                                            (Text)
-import qualified Data.Text                                            as Txt
-import           System.Directory                                     (createDirectoryIfMissing)
-import           System.FilePath                                      ((</>))
-
-import           Ply
-import           Ply.Core.Internal.Reify                              (ReifyRole,
-                                                                       ReifyTypenames)
-import           Ply.Core.Serialize
-import           Ply.Core.TypedReader
-
-import           GeniusYield.OnChain.Common.Scripts
-
-import           GeniusYield.OnChain.DEX.NFT.Compiled                 (optimizedNftPolicy)
-import           GeniusYield.OnChain.DEX.PartialOrder.Compiled        (optimizedPartialOrderValidator,
-                                                                       optimizedPartialOrderValidatorWithTracing)
-import           GeniusYield.OnChain.DEX.PartialOrderConfig.Compiled  (optimizedPartialOrderConfigValidator,
-                                                                       optimizedPartialOrderConfigValidatorWithTracing)
-import           GeniusYield.OnChain.DEX.PartialOrderNFT.Compiled     (optimizedPartialOrderNftPolicy,
-                                                                       optimizedPartialOrderNftPolicyWithTracing)
-import           GeniusYield.OnChain.DEX.PartialOrderNFTV1_1.Compiled
+import Control.Exception                                    (throwIO)
+import Control.Monad.IO.Class                               (liftIO)
+import Control.Monad.Trans.Except
+import Data.Text (Text)
+import Data.Text qualified as Txt
+import System.Directory                                     (createDirectoryIfMissing)
+import System.FilePath                                      ((</>))
+import Ply
+import Ply.Core.Internal.Reify                              (ReifyRole, ReifyTypenames)
+import Ply.Core.Serialize
+import Ply.Core.TypedReader
+import GeniusYield.OnChain.Common.Scripts
+import GeniusYield.OnChain.DEX.NFT.Compiled                 (optimizedNftPolicy)
+import GeniusYield.OnChain.DEX.PartialOrder.Compiled        (optimizedPartialOrderValidator, optimizedPartialOrderValidatorWithTracing)
+import GeniusYield.OnChain.DEX.PartialOrderConfig.Compiled  (optimizedPartialOrderConfigValidator, optimizedPartialOrderConfigValidatorWithTracing)
+import GeniusYield.OnChain.DEX.PartialOrderNFT.Compiled     (optimizedPartialOrderNftPolicy, optimizedPartialOrderNftPolicyWithTracing)
+import GeniusYield.OnChain.DEX.PartialOrderNFTV1_1.Compiled (optimizedPartialOrderNftV1_1Policy, optimizedPartialOrderNftV1_1PolicyWithTracing)
+import GeniusYield.OnChain.DEX.TwoWayOrderConfig.Compiled   (optimizedTwoWayOrderConfigValidator, optimizedTwoWayOrderConfigValidatorWithTracing)
 
 main :: IO ()
 main = do
@@ -46,6 +40,8 @@ writeScripts = do
     writeScriptHelper dex'PartialOrderNFTV1_1FileTracing optimizedPartialOrderNftV1_1PolicyWithTracing
     writeScriptHelper dex'PartialOrderConfigFile optimizedPartialOrderConfigValidator
     writeScriptHelper dex'PartialOrderConfigFileTracing optimizedPartialOrderConfigValidatorWithTracing
+    writeScriptHelper dex'TwoWayOrderConfigFile optimizedTwoWayOrderConfigValidator
+    writeScriptHelper dex'TwoWayOrderConfigFileTracing optimizedTwoWayOrderConfigValidatorWithTracing
 
 scriptStorage :: FilePath
 scriptStorage = "geniusyield-common/data/compiled-scripts"

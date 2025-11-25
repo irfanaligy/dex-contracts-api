@@ -42,8 +42,9 @@ library
   ghc-options:        -Wall
   hs-source-dirs:     src
   exposed-modules:
-    GeniusYield.OnChain.Common.Scripts
     GeniusYield.OnChain.Common.Scripts.DEX.Data
+    GeniusYield.OnChain.Common.Scripts
+  other-modules:
 
   build-depends:
     , aeson
