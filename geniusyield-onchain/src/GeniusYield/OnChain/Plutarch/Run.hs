@@ -1,34 +1,37 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module GeniusYield.OnChain.Plutarch.Run
-    ( applyArguments
-    , evalT
-    , evalSerialize
-    , evalWithArgsT
-    , evalWithArgsT'
-    ) where
+  ( applyArguments
+  , evalT
+  , evalSerialize
+  , evalWithArgsT
+  , evalWithArgsT'
+  )
+where
 
-import           Control.Lens.Combinators (over)
-import           Data.Bifunctor           (first)
-import           Data.ByteString.Short    (ShortByteString)
-import           Data.Default             (def)
-import           Data.Text                (Text, pack)
-import           Plutarch                 (ClosedTerm, compile)
-import           Plutarch.Evaluate        (evalScript)
-import           Plutarch.Script          (Script (Script, unScript), serialiseScript)
-import           PlutusCore.MkPlc         (mkConstant, mkIterApp)
-import           PlutusLedgerApi.V1       (Data, ExBudget)
-import           UntypedPlutusCore        (DeBruijn, DefaultFun, DefaultUni, Program, progTerm)
+import Control.Lens.Combinators (over)
+import Data.Bifunctor (first)
+import Data.ByteString.Short (ShortByteString)
+import Data.Default (def)
+import Data.Text (Text, pack)
+import Plutarch (ClosedTerm, compile)
+import Plutarch.Evaluate (evalScript)
+import Plutarch.Script (Script (Script, unScript), serialiseScript)
+import PlutusCore.MkPlc (mkConstant, mkIterApp)
+import PlutusLedgerApi.V1 (Data, ExBudget)
+import UntypedPlutusCore (DeBruijn, DefaultFun, DefaultUni, Program, progTerm)
 
 applyArguments :: Script -> [Data] -> Script
 applyArguments (Script p) args =
-    let termArgs = mkConstant () <$> args
-        applied t = mkIterApp () t termArgs
-    in Script $ over progTerm applied p
+  let
+    termArgs = mkConstant () <$> args
+    applied t = mkIterApp () t termArgs
+  in
+    Script $ over progTerm applied p
 
 evalSerialize :: ClosedTerm a -> Either Text ShortByteString
 evalSerialize x = serialiseScript . (\(a, _, _) -> a) <$> evalT x

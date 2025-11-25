@@ -5,7 +5,6 @@
 - [DEX](#dex)
   - [Table of Content](#table-of-content)
   - [Introduction](#introduction)
-  - [Audit report](#audit-report)
   - [NFT](#nft)
   - [Special NFT for Partially Fillable Orders](#special-nft-for-partially-fillable-orders)
   - [Partially Fillable Orders](#partially-fillable-orders)
@@ -16,18 +15,28 @@ The purpose of the DEX smart contracts is to implement a _DEX_, a _Decentralized
 which include ada and arbitrary custom tokens. This is _Decentralized_ in the sense that no central authority
 (like a traditional, centralized exchange) is needed: Users can swap without needing to trust some authority or each other.
 
+We anticipate two primary flows. Makers can publish _partially fillable orders_ that describe the assets they are willing to sell,
+the requested price, and optional validity windows. Takers may fill such orders completely or partially, enabling gradual execution
+without recreating new orders for the remaining quantity. In addition, the DEX supports _two-way orders_ that simultaneously place
+both sides of a market (bid and ask). Two-way orders allow automated market makers or advanced traders to maintain balanced quotes
+with a single UTxO while on-chain validators enforce consistent pricing and deposits.
+
+Both order flavours live on-chain as UTxOs protected by validators. Participants interact with them through scripts that enforce
+prices, fees, and configuration constraints without relying on custodial entities.
+
+Anybody can fill orders and use liquidity positions for swaps. We anticipate that there will be a large number of "bots",
+programs that scan the blockchain for open orders and use diverse strategies to fill them - with or without the help of liquidity positions.
+Those bots can "pocket" any arbitrage they encounter, which will motivate bot authors and lead to a healthy competition among them,
+resulting in orders being filled swiftly and the market becoming as efficient as possible.
+
 Our DEX architecture is very open and extensible.
 
-In total, we at the moment have four different smart contracts powering our DEX:
+In total, we have five different smart contracts powering our DEX:
 
  - [_Partially Fillable Orders_](#partially-fillable-orders). Order that can be filled in several transactions, each only taking part of the offered tokens and paying corresponding asked tokens.
  - [_NFT_](#nft). A simple NFT minting policy which guarantees that any token seen with it's currency symbol is an NFT.
  - [_Special NFT for Partially Fillable Orders_](#special-nft-for-partially-fillable-orders). This besides giving the same guarantees as our simple NFT minting policy, also guarantees that any UTxO seen with this token is a sensible order. Besides that, an NFT token in an order is also useful to track it's "identity" over it's lifetime. Note that there is no mutable state in the eUTxO-model, and one way to simulate it is to pass an NFT from the consumed UTxO to the new one being created (with modified value and/or datum) so as to identify "same" abstract order.
- - [_Fee Configuration_](#fee-configuration). Governs fees charged to maker & taker when creating, filling an order respectively.
-
-## Audit Report
-
-Our DEX smart contracts have been audited by [Anastasia Labs](https://anastasialabs.com/) and report is available [here](./Anastasia_Labs____Genius_Yield_Audit.pdf).
+ - [_Fee Configuration_](./../../../../../src-plutustx/GeniusYield/OnChain/DEX/PartialOrderConfig.md). Governs fees charged to maker & taker when creating, filling an order respectively.
 
 ## NFT
 
@@ -52,9 +61,9 @@ Since UTxO's are unique and can only exist once, this guarantees that only one t
   > Contract available [here](./PartialOrderNFT.hs).
 
   > **ⓘ**
-  > Before going over this section, it would be helpful to first understand our ["_Fee Configuration_"](#fee-configuration) contract.
+  > Before going over this section, it would be helpful to first understand our ["_Fee Configuration_"](./../../../../../src-plutustx/GeniusYield/OnChain/DEX/PartialOrderConfig.md) contract.
 
-Our aim is to have our order validator consider only those orders which have a token minted by this minting policy where this minting policy would guarantee that any token minted under it would represent a valid order[^1], besides giving guarantees of our [simple NFT minting script](#nft).
+Our aim is to have our order validator consider only those orders which have a token minted by this minting policy where this minting policy would guarantee that any token minted under it would represent a valid order[^4], besides giving guarantees of our [simple NFT minting script](#nft).
 
 This contract is parameterized by:
 
@@ -62,7 +71,7 @@ This contract is parameterized by:
     > **💡**
     > The reason why we consider payment credential instead of complete address is that in general we would like to have order UTxO placed at an address whose payment part is controlled by our validator however staking part would still belong to order creator, as until the order is filled, ada in order still belongs to the creator so it would be nice if it never misses the stake snapshot.
 * An address and
-* an asset class which we use to identify the desired reference input. Idea is to first mint an NFT token using our [simple NFT minting script](#nft) and then putting it at our [fee configuration](#fee-configuration) contract (whose address is the second parameter) with required datum to be referred by this script.
+* an asset class which we use to identify the desired reference input. Idea is to first mint an NFT token using our [simple NFT minting script](#nft) and then putting it at our [fee configuration](./../../../../../src-plutustx/GeniusYield/OnChain/DEX/PartialOrderConfig.md) contract (whose address is the second parameter) with required datum to be referred by this script.
 
 This contract is roughly the same as our [simple NFT minting script](#nft) with more conditions in case redeemer is not `Nothing` checked by `checkOutput` function in contract, which are:
 
@@ -248,47 +257,8 @@ Follow three interactions are possible with this validator:
         * `podContainedPayment` is increased by `⌈amt * podPrice⌉`.
         * Rest of the fields are same as before.
 
-## Fee Configuration
 
-  > **📃**
-  > Contract available [here](./PartialOrderConfig.hs).
+## Deprecated Contracts
 
-For our DEX, we want fees to be _enforced_ by our smart contracts and not just be at the liberty of off-chain code. Secondly, we want the option to _change_ fees without that change resulting in a different script and a different smart contract address.
+Earlier experiments such as the original one-way order validator and liquidity position contract have been removed from this repository. The remaining documentation focuses on the actively maintained partially fillable and two-way order scripts.
 
-Note that change in flat taker fees, only apply to _new_ orders and therefore with respect to end users, update to these fee parameters does not affect old orders.
-
-Contract is parameterized by `AssetClass` of an NFT token (which we mint using our [simple NFT minting policy](#nft)) and uses it to require that UTxO being spent contains this token and also to identify continuing output.
-
-Following is the datum type of validator contract and it would be helpful to read the mentioned description (given as a comment string) for it's fields:
-
-```haskell
-data PartialOrderConfigDatum = PartialOrderConfigDatum
-    { pocdSignatories    :: [PubKeyHash]   -- ^ Public key hashes of the potential signatories.
-    , pocdReqSignatories :: Integer        -- ^ Number of required signatures.
-    , pocdNftSymbol      :: CurrencySymbol -- ^ Currency symbol of the partial order Nft.
-    , pocdFeeAddr        :: Address        -- ^ Address to which fees are paid.
-    , pocdMakerFeeFlat   :: Integer        -- ^ Flat fee (in lovelace) paid by the maker.
-    , pocdMakerFeeRatio  :: Rational       -- ^ Proportional fee (in the offered token) paid by the maker.
-    , pocdTakerFee       :: Integer        -- ^ Flat fee (in lovelace) paid by the taker.
-    , pocdMinDeposit     :: Integer        -- ^ Minimum required deposit (in lovelace).
-    } deriving (Generic, P.Show)
-```
-
-And there is only one redeemer action of type unit `()`.
-
-Idea is to create an UTxO at our validator containing the mentioned NFT value and with desired datum. Then our other DEX contracts, such as [Partially Fillable Orders](#partially-fillable-orders) contract would use this UTxO as a reference input to know for some of the needed datum fields.
-
-Rules governing how this UTxO can be updated:
-
-* As mentioned before, UTxO being spent, must have unit token of the asset class given as parameter for further checks to be exercised, else we allow such an irrelevant UTxO to be spent.
-* Transaction has at least `pocdReqSignatories` number of signatures coming from `pocdSignatories` signatories.
-* In continuing output, we require that:
-  * `pocdSignatories` are all unique and within 1 & 10 (inclusive).
-  * `pocdReqSignatories` is positive and less than length of `pocdSignatories`.
-  * `pocdNftSymbol` remains same. This field holds the currency symbol of ["Special NFT for Partially Fillable Orders"](#special-nft-for-partially-fillable-orders) contract. Reason why it is stored is explained for in [Partially Fillable Orders](#partially-fillable-orders) contract.
-  * There is an output being made in a transaction to the new `pocdFeeAddr`, this guarantees that this address is valid.
-  * `pocdMakerFeeFlat`, `pocdTakerFee`, `pocdMinDeposit` are all non negative. Having them as negative would also violate some of the invariants assumed by ["Special NFT for Partially Fillable Orders"](#special-nft-for-partially-fillable-orders) script. Also, we require them to be less than 1000 ADA so as to bound our datum.
-  * `pocdMakerFeeRatio` is b/w 0 & 1 (inclusive).
-
-
-[^1]: This also simplifies our off-chain event listener as it can just look for token minted by our policy script to know for valid order instead of performing various checks against the order UTxO.

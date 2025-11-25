@@ -1,21 +1,20 @@
-module GeniusYield.OnChain.DEX.NFT.Compiled (
-    originalNftPolicy,
-    optimizedNftPolicy
-) where
+module GeniusYield.OnChain.DEX.NFT.Compiled
+  ( originalNftPolicy
+  , optimizedNftPolicy
+  )
+where
 
-
-import Data.Text (Text)
 import Data.Default (def)
-
-import qualified Plutarch.Unsafe as PUNSAFE
+import Data.Text (Text)
+import Plutarch.Api.V2 qualified as PV2
 import Plutarch.Prelude
+import Plutarch.Unsafe qualified as PUNSAFE
+import Plutonomy qualified
 import Ply hiding ((#))
 import Ply.Plutarch
-import qualified Plutarch.Api.V2 as PV2
-import qualified Plutonomy
 
-import           GeniusYield.OnChain.DEX.NFT
-import           GeniusYield.Plutonomy ()
+import GeniusYield.OnChain.DEX.NFT
+import GeniusYield.Plutonomy ()
 
 originalNftPolicy :: Either Text (TypedScript 'MintingPolicyRole '[])
 originalNftPolicy = toTypedScript def mkNFTPolicy'
@@ -25,7 +24,7 @@ optimizedNftPolicy = Plutonomy.optimizeUPLC <$> originalNftPolicy
 
 mkNFTPolicy' :: ClosedTerm PV2.PMintingPolicy
 mkNFTPolicy' = plam $ \redm ctx ->
-  popaque $ mkNFTPolicy
-    # PUNSAFE.punsafeCoerce redm
-    # ctx
-
+  popaque
+    $ mkNFTPolicy
+      # PUNSAFE.punsafeCoerce redm
+      # ctx

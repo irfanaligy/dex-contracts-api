@@ -1,24 +1,26 @@
 {-# LANGUAGE DataKinds #-}
 
-module GeniusYield.OnChain.DEX.PartialOrderConfig.Compiled (
-    originalPartialOrderConfigValidator,
-    optimizedPartialOrderConfigValidator,
-    optimizedPartialOrderConfigValidatorWithTracing,
-) where
+module GeniusYield.OnChain.DEX.PartialOrderConfig.Compiled
+  ( originalPartialOrderConfigValidator
+  , optimizedPartialOrderConfigValidator
+  , optimizedPartialOrderConfigValidatorWithTracing
+  )
+where
 
-import           Data.Default                               (def)
-import           Data.Text                                  (Text)
-import           GeniusYield.OnChain.DEX.PartialOrderConfig
-import           GeniusYield.OnChain.Plutarch.Api           (PAssetClass)
-import           GeniusYield.OnChain.Utils                  (desiredTracingMode)
-import           GeniusYield.Plutonomy                      ()
-import           Plutarch
-import qualified Plutarch.Api.V2                            as PV2
-import qualified Plutarch.Unsafe                            as PUNSAFE
-import qualified Plutonomy
-import           PlutusLedgerApi.V1.Value                   (AssetClass)
-import           Ply                                        hiding ((#))
-import           Ply.Plutarch
+import Data.Default (def)
+import Data.Text (Text)
+import Plutarch
+import Plutarch.Api.V2 qualified as PV2
+import Plutarch.Unsafe qualified as PUNSAFE
+import Plutonomy qualified
+import PlutusLedgerApi.V1.Value (AssetClass)
+import Ply hiding ((#))
+import Ply.Plutarch
+
+import GeniusYield.OnChain.DEX.PartialOrderConfig
+import GeniusYield.OnChain.Plutarch.Api (PAssetClass)
+import GeniusYield.OnChain.Utils (desiredTracingMode)
+import GeniusYield.Plutonomy ()
 
 type POConfigScript = TypedScript 'ValidatorRole '[AssetClass]
 
@@ -31,13 +33,15 @@ optimizedPartialOrderConfigValidator = Plutonomy.optimizeUPLC <$> originalPartia
 optimizedPartialOrderConfigValidatorWithTracing :: Either Text POConfigScript
 optimizedPartialOrderConfigValidatorWithTracing = Plutonomy.optimizeUPLC <$> originalPartialOrderConfigValidator def {tracingMode = desiredTracingMode}
 
-mkPartialOrderConfigValidator' :: 
-  ClosedTerm ( PAssetClass
-          :--> PV2.PValidator
-             )
+mkPartialOrderConfigValidator'
+  :: ClosedTerm
+       ( PAssetClass
+           :--> PV2.PValidator
+       )
 mkPartialOrderConfigValidator' = plam $ \nftAC datm redm ctx ->
-  popaque $ mkPartialOrderConfigValidator
-    # nftAC
-    # PUNSAFE.punsafeCoerce datm
-    # PUNSAFE.punsafeCoerce redm
-    # ctx
+  popaque
+    $ mkPartialOrderConfigValidator
+      # nftAC
+      # PUNSAFE.punsafeCoerce datm
+      # PUNSAFE.punsafeCoerce redm
+      # ctx
