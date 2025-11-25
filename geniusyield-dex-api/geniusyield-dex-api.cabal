@@ -5,25 +5,25 @@ author:        Lars Bruenjes
 maintainer:    lars.bruenjes@geniusyield.co
 build-type:    Simple
 copyright:     © 2021 Lars Bruenjes
--- data-dir:      ../geniusyield-onchain/compiled
--- data-files:    DEX.NFT
---              , DEX.PartialOrder
---              , DEX.PartialOrderConfig
---              , DEX.PartialOrderConfigTracing
---              , DEX.PartialOrderConfigV1AppliedMainnet
---              , DEX.PartialOrderConfigV1AppliedPreprod
---              , DEX.PartialOrderNFT
---              , DEX.PartialOrderNFTTracing
---              , DEX.PartialOrderNFTV1_1
---              , DEX.PartialOrderNFTV1_1Tracing
---              , DEX.PartialOrderTracing
---              , DEX.TwoWayOrderConfig
---              , DEX.TwoWayOrder.json
---              , SignedMint
---              , Staking.Stake
---              , Staking.Stake.Old
---              , TokenSale.Order
---              , TokenSale.SalePhaseToken
+data-dir:      geniusyield-onchain/compiled
+data-files:    DEX.NFT
+             , DEX.PartialOrder
+             , DEX.PartialOrderConfig
+             , DEX.PartialOrderConfigTracing
+             , DEX.PartialOrderConfigV1AppliedMainnet
+             , DEX.PartialOrderConfigV1AppliedPreprod
+             , DEX.PartialOrderNFT
+             , DEX.PartialOrderNFTTracing
+             , DEX.PartialOrderNFTV1_1
+             , DEX.PartialOrderNFTV1_1Tracing
+             , DEX.PartialOrderTracing
+             , DEX.TwoWayOrderConfig
+             , DEX.TwoWayOrder.json
+             , SignedMint
+             , Staking.Stake
+             , Staking.Stake.Old
+             , TokenSale.Order
+             , TokenSale.SalePhaseToken
 
 common common
   default-language:   Haskell2010

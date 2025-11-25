@@ -72,8 +72,8 @@ import PlutusTx.Builtins.Internal (BuiltinByteString (..))
 
 import GeniusYield.Scripts.BlueprintTH (makeBPTypes, uponBPTypes)
 
-$(makeBPTypes "../geniusyield-onchain/compiled/DEX.TwoWayOrder.json")
-$(uponBPTypes "../geniusyield-onchain/compiled/DEX.TwoWayOrder.json")
+$(makeBPTypes "geniusyield-onchain/compiled/DEX.TwoWayOrder.json")
+$(uponBPTypes "geniusyield-onchain/compiled/DEX.TwoWayOrder.json")
 
 -- Note: The above TH splices depend on the external JSON file.
 -- Touchpoint to trigger recompilation on blueprint refresh.
