@@ -150,7 +150,7 @@ data TwoWayOrderInfo = TwoWayOrderInfo
   , twoiNFTCS :: !GYMintingPolicyId
   , twoiRawDatum :: !GYDatum
   }
-  deriving stock (Generic, Show)
+  deriving stock (Generic, Show, Eq)
 
 instance Swagger.ToSchema GYPaymentVerificationKey where
   declareNamedSchema _ =

@@ -25,19 +25,19 @@ import Data.Version (showVersion)
 import Deriving.Aeson
 import Fmt
 import GHC.TypeLits (Symbol)
-import GeniusYield.Api.Dex.PartialOrder (PartialOrderInfo (..), partialOrders)
-import GeniusYield.Api.Dex.PartialOrderConfig (RefPocd (..), SomeRefPocd (SomeRefPocd), fetchPartialOrderConfig)
+import GeniusYield.Api.DEX.PartialOrder (PartialOrderInfo (..), partialOrders)
+import GeniusYield.Api.DEX.PartialOrderConfig (RefPocd (..), SomeRefPocd (SomeRefPocd), fetchPartialOrderConfig)
 import GeniusYield.OrderBot.Domain.Markets
 import GeniusYield.Scripts (PartialOrderConfigInfoF (..))
-import GeniusYield.Scripts.Dex.Version (POCVersion (POCVersion1_1))
+import GeniusYield.Scripts.DEX.Version (POCVersion (POCVersion1_1))
 import GeniusYield.Server.Assets
 import GeniusYield.Server.Auth (APIKeyAuthProtect, V0)
 import GeniusYield.Server.Constants (gitHash)
 import GeniusYield.Server.Ctx
-import GeniusYield.Server.Dex.HistoricalPrices.Maestro
-import GeniusYield.Server.Dex.HistoricalPrices.TapTools (TapToolsPriceHistoryAPI, handleTapToolsPriceHistoryApi)
-import GeniusYield.Server.Dex.Markets (MarketsAPI, handleMarketsApi)
-import GeniusYield.Server.Dex.PartialOrder (OrderInfo (..), OrdersAPI, handleOrdersApi, poiToOrderInfo)
+import GeniusYield.Server.DEX.HistoricalPrices.Maestro
+import GeniusYield.Server.DEX.HistoricalPrices.TapTools (TapToolsPriceHistoryAPI, handleTapToolsPriceHistoryApi)
+import GeniusYield.Server.DEX.Markets (MarketsAPI, handleMarketsApi)
+import GeniusYield.Server.DEX.PartialOrder (OrderInfo (..), OrdersAPI, handleOrdersApi, poiToOrderInfo)
 import GeniusYield.Server.Orphans ()
 import GeniusYield.Server.Tx (TxAPI, handleTxApi)
 import GeniusYield.Server.Utils

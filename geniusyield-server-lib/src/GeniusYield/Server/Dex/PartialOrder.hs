@@ -16,12 +16,12 @@ import Data.Swagger.Internal.Schema qualified as Swagger
 import Deriving.Aeson
 import Fmt
 import GHC.TypeLits (AppendSymbol, Symbol)
-import GeniusYield.Api.Dex.PartialOrder (PartialOrderInfo (..), cancelMultiplePartialOrders', fillMultiplePartialOrders', fillPartialOrder', getPartialOrdersInfos, getPartialOrdersInfos', getVersionsInOrders, orderByNft, partialOrderPrice', placePartialOrder'', preferentiallySelectLatestPocd, preferentiallySelectLatestVersion, roundFunctionForPOCVersion)
-import GeniusYield.Api.Dex.PartialOrderConfig (RefPocd (..), SomeRefPocd (SomeRefPocd), fetchPartialOrderConfig, fetchPartialOrderConfigs, selectRefPocd)
+import GeniusYield.Api.DEX.PartialOrder (PartialOrderInfo (..), cancelMultiplePartialOrders', fillMultiplePartialOrders', fillPartialOrder', getPartialOrdersInfos, getPartialOrdersInfos', getVersionsInOrders, orderByNft, partialOrderPrice', placePartialOrder'', preferentiallySelectLatestPocd, preferentiallySelectLatestVersion, roundFunctionForPOCVersion)
+import GeniusYield.Api.DEX.PartialOrderConfig (RefPocd (..), SomeRefPocd (SomeRefPocd), fetchPartialOrderConfig, fetchPartialOrderConfigs, selectRefPocd)
 import GeniusYield.HTTP.Errors
 import GeniusYield.OrderBot.Domain.Markets (OrderAssetPair (..))
-import GeniusYield.Scripts.Dex.PartialOrderConfig (PartialOrderConfigInfoF (..))
-import GeniusYield.Scripts.Dex.Version (POCVersion (POCVersion1_1))
+import GeniusYield.Scripts.DEX.PartialOrderConfig (PartialOrderConfigInfoF (..))
+import GeniusYield.Scripts.DEX.Version (POCVersion (POCVersion1_1))
 import GeniusYield.Server.Ctx
 import GeniusYield.Server.Orphans ()
 import GeniusYield.Server.Tx (handleTxSign, handleTxSubmit, throwNoSigningKeyError)

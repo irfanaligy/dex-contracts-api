@@ -42,6 +42,7 @@ common common
     GADTs
     GeneralizedNewtypeDeriving
     ImportQualifiedPost
+    LambdaCase
     MultiParamTypeClasses
     MultiWayIf
     NamedFieldPuns
@@ -101,6 +102,7 @@ library
     -- GeniusYield.Api.Cache
     GeniusYield.Api.DEX.Exceptions
     -- GeniusYield.Api.DEX.Option
+    GeniusYield.Api.DEX.Constants
     GeniusYield.Api.DEX.PartialOrder
     GeniusYield.Api.DEX.PartialOrderConfig
     GeniusYield.Scripts.DEX.PartialOrderConfig.OnChain

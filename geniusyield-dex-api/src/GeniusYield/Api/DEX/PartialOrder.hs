@@ -255,7 +255,7 @@ data PartialOrderInfo = PartialOrderInfo
   , poiRawDatum :: !GYDatum
   -- ^ Original raw datum.
   }
-  deriving stock (Generic, Show)
+  deriving stock (Generic, Show, Eq)
 
 poiContainedFeeToPlutus :: POIContainedFee -> PartialOrderContainedFee
 poiContainedFeeToPlutus POIContainedFee {..} =
