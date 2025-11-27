@@ -30,6 +30,12 @@ module GeniusYield.Api.DEX.TwoWayOrder
   , getTwoWayOrderInfo
   , placeTwoWayOrders
   , resolveContinuingDeposit
+
+  , OrderAssets (..)
+  , OrderPrices (..)
+  , extractOrderAssets
+  , extractOrderPrices
+  -- ^ for use in smart-order-router
   )
 where
 
@@ -44,6 +50,7 @@ import Data.Foldable (for_)
 import Data.Function ((&))
 import Data.List.NonEmpty (NonEmpty)
 import Data.List.NonEmpty qualified as NE
+import Data.Maybe (isJust, fromJust)
 import Data.Map.Strict (type Map)
 import Data.Map.Strict qualified as Map
 import Data.Ratio (denominator, numerator, (%))
@@ -791,6 +798,30 @@ extractOrderAssets TwoWayOrderInfo {twoiOffer} =
           , oaReverseAsset = reverseAsset
           , oaReverseAmount = maybe 0 (\offer -> toInteger offer.amount) reverseOffer
           }
+
+data PriceVal = FixedVal GYRational | DynamicVal PriceDelta deriving (Eq, Show)
+
+data OrderPrices = OrderPrices { opStraightPrice :: PriceVal , opReversePrice  :: Maybe PriceVal }
+
+extractOrderPrices :: TwoWayOrderInfo -> OrderPrices
+extractOrderPrices TwoWayOrderInfo {twoiOffer} =
+  case twoiOffer of
+    TWOIPriceFixed (TWOrder twoWays) ->
+        case twoWays of
+          TwoWays { straight = AssetDetails _ straightOffer, reverse = AssetDetails _ mReverseOffer } ->
+            OrderPrices
+            {
+              opStraightPrice = FixedVal (straightOffer.price)
+            , opReversePrice  = if isJust mReverseOffer then Just (FixedVal (fromJust mReverseOffer).price) else Nothing
+            }
+    TWOIPriceDynamic {twoioPriceDelta = TWOrder twoWays} ->
+      case twoWays of
+          TwoWays { straight = AssetDetails _ straightOffer , reverse = AssetDetails _ mReverseOffer } ->
+            OrderPrices
+            {
+              opStraightPrice = DynamicVal (straightOffer.price)
+            , opReversePrice  = if isJust mReverseOffer then Just (DynamicVal (fromJust mReverseOffer).price) else Nothing
+            }
 
 data PricingContext m = PricingContext
   { pcStraightAsset :: GYAssetClass
