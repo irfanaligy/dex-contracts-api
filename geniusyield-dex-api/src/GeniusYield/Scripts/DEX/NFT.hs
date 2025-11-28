@@ -1,22 +1,20 @@
-module GeniusYield.Scripts.DEX.NFT
-  ( nftMintingPolicy
-  , mkNftRedeemer
+module GeniusYield.Scripts.DEX.NFT (
+  nftMintingPolicy,
+  mkNftRedeemer,
 
-    -- * shared functions
-  , expectedTokenName
-  , expectedTwoTokenName
-  , expectedTwoTokenNameN
-  )
-where
+  -- * shared functions
+  expectedTokenName,
+  expectedTwoTokenName,
+  expectedTwoTokenNameN,
+) where
 
 import Data.Maybe (fromJust)
 import GeniusYield.OnChain.Core.Common.Utils qualified as OnChain
+import GeniusYield.Scripts.Internal (
+  GYCompiledScriptsRaw (GYCompiledScriptsRaw, gycsDEXNFTPolicy),
+  mintingPolicyFromPly,
+ )
 import GeniusYield.Types
-
-import GeniusYield.Scripts.Internal
-  ( GYCompiledScriptsRaw (GYCompiledScriptsRaw, gycsDEXNFTPolicy)
-  , mintingPolicyFromPly
-  )
 
 nftMintingPolicy :: GYCompiledScriptsRaw -> GYScript PlutusV2
 nftMintingPolicy GYCompiledScriptsRaw {gycsDEXNFTPolicy} =

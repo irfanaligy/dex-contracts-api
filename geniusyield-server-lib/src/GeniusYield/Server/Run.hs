@@ -89,7 +89,7 @@ runServer mfp = do
             ctxNetworkId = nid,
             ctxDexInfo =
               if
-                | nid == GYMainnet ->        dexInfoDefaultMainnet'
+                | nid == GYMainnet -> dexInfoDefaultMainnet'
                 | nid == GYTestnetPreprod -> dexInfoDefaultPreprod'
                 | otherwise -> error "Only mainnet & preprod network are supported",
             ctxMaestroProvider = MaestroProvider menv,

@@ -4,6 +4,8 @@ module GeniusYield.OnChain.TokenSale.Order.Compiled (originalOrderValidator, opt
 
 import Data.Default (def)
 import Data.Text (Text)
+import GeniusYield.OnChain.TokenSale.Order
+import GeniusYield.Plutonomy ()
 import Plutarch.Api.V1
 import Plutarch.Api.V2 qualified as PV2
 import Plutarch.Extra.RationalData
@@ -15,24 +17,21 @@ import PlutusTx.Ratio qualified as PlutusTx
 import Ply (ScriptRole (ValidatorRole), TypedScript)
 import Ply.Plutarch
 
-import GeniusYield.OnChain.TokenSale.Order
-import GeniusYield.Plutonomy ()
-
 originalOrderValidator
   :: Either
        Text
        ( TypedScript
            'ValidatorRole
-           [ POSIXTime
-           , POSIXTime
-           , CurrencySymbol
-           , TokenName
-           , PlutusTx.Rational
-           , PubKeyHash
-           , Integer
-           , PlutusTx.Rational
-           , Address
-           , TokenName
+           [ POSIXTime,
+             POSIXTime,
+             CurrencySymbol,
+             TokenName,
+             PlutusTx.Rational,
+             PubKeyHash,
+             Integer,
+             PlutusTx.Rational,
+             Address,
+             TokenName
            ]
        )
 originalOrderValidator = toTypedScript def mkOrderValidator'
@@ -42,16 +41,16 @@ optimizedOrderValidator
        Text
        ( TypedScript
            'ValidatorRole
-           '[ POSIXTime
-            , POSIXTime
-            , CurrencySymbol
-            , TokenName
-            , PlutusTx.Rational
-            , PubKeyHash
-            , Integer
-            , PlutusTx.Rational
-            , Address
-            , TokenName
+           '[ POSIXTime,
+              POSIXTime,
+              CurrencySymbol,
+              TokenName,
+              PlutusTx.Rational,
+              PubKeyHash,
+              Integer,
+              PlutusTx.Rational,
+              Address,
+              TokenName
             ]
        )
 optimizedOrderValidator = Plutonomy.optimizeUPLC <$> originalOrderValidator
@@ -71,22 +70,22 @@ mkOrderValidator'
            :--> PV2.PValidator
        )
 mkOrderValidator' =
-  plam
-    $ \endSaleT
-       endDistribT
-       csToken
-       tnToken
-       price
-       sellerKey
-       minAlloc
-       fee
-       feeAddr
-       tnSPT
-       datm
-       redm
-       ctx ->
-        popaque
-          $ mkOrderValidator
+  plam $
+    \endSaleT
+     endDistribT
+     csToken
+     tnToken
+     price
+     sellerKey
+     minAlloc
+     fee
+     feeAddr
+     tnSPT
+     datm
+     redm
+     ctx ->
+        popaque $
+          mkOrderValidator
             # endSaleT
             # endDistribT
             # csToken

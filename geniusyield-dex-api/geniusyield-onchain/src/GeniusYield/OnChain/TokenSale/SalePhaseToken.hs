@@ -4,28 +4,26 @@
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -O2 -fspecialize-aggressively -Wno-incomplete-patterns #-}
 
-module GeniusYield.OnChain.TokenSale.SalePhaseToken
-  ( -- * Plutarch types
-    (:-->)
-  , Term
-  , PTokenName (..)
-  , PPOSIXTime
-  , PAddress (..)
-  , PAsData
-  , PUnit (..)
-  , PScriptContext (..)
+module GeniusYield.OnChain.TokenSale.SalePhaseToken (
+  -- * Plutarch types
+  (:-->),
+  Term,
+  PTokenName (..),
+  PPOSIXTime,
+  PAddress (..),
+  PAsData,
+  PUnit (..),
+  PScriptContext (..),
 
-    -- * Sale Phase Token minting policy
-  , mkSalePhaseTokenPolicy
-  )
-where
+  -- * Sale Phase Token minting policy
+  mkSalePhaseTokenPolicy,
+) where
 
+import GeniusYield.OnChain.Plutarch.Api
 import Plutarch.Api.V1
 import Plutarch.Api.V1.Value
 import Plutarch.Api.V2 qualified as PV2
 import Plutarch.Prelude
-
-import GeniusYield.OnChain.Plutarch.Api
 
 {- | This defines the minting policy of the Sales Phase Token. It is parameterised over:
 
@@ -63,76 +61,76 @@ mkSalePhaseTokenPolicy = plam $ \tn startT endT addr _ ctx ->
     # endT
     # addr
     # (pfield @"txInfo" # ctx)
-  where
-    policy
-      :: Term
-           s
-           ( PCurrencySymbol
-               :--> PTokenName
-               :--> PPOSIXTime
-               :--> PPOSIXTime
-               :--> PAddress
-               :--> PV2.PTxInfo
-               :--> PUnit
-           )
-    policy = plam $ \cs tn startT endT addr info ->
-      plet (pmintedTokens # cs # tn # info) $ \amt ->
-        let
-          utxo = sentTo # cs # tn # info
+ where
+  policy
+    :: Term
+         s
+         ( PCurrencySymbol
+             :--> PTokenName
+             :--> PPOSIXTime
+             :--> PPOSIXTime
+             :--> PAddress
+             :--> PV2.PTxInfo
+             :--> PUnit
+         )
+  policy = plam $ \cs tn startT endT addr info ->
+    plet (pmintedTokens # cs # tn # info) $ \amt ->
+      let
+        utxo = sentTo # cs # tn # info
 
-          -- Checks
+        -- Checks
 
-          checkIfBurning = amt #< 0
+        checkIfBurning = amt #< 0
 
-          validAmt = amt #== 1
-          validUtxo = pdata addr #== pfield @"address" # utxo
-          validTimeRange = duringSale # startT # endT # info
+        validAmt = amt #== 1
+        validUtxo = pdata addr #== pfield @"address" # utxo
+        validTimeRange = duringSale # startT # endT # info
 
-          -- Trace error messages
+        -- Trace error messages
 
-          invalidAmtErr = ptraceError "amount not one."
-          invalidUtxoErr = ptraceError "token not sent to address."
-          invalidTimeRangeErr = ptraceError "not during sale."
+        invalidAmtErr = ptraceError "amount not one."
+        invalidUtxoErr = ptraceError "token not sent to address."
+        invalidTimeRangeErr = ptraceError "not during sale."
 
-          -- Validate check of error.
+        -- Validate check of error.
 
-          checkValidTimeRange = pif validTimeRange (pconstant True) invalidTimeRangeErr
-          checkValidUtxo = pif validUtxo checkValidTimeRange invalidUtxoErr
-          checkAll = pif validAmt checkValidUtxo invalidAmtErr
-        in
+        checkValidTimeRange = pif validTimeRange (pconstant True) invalidTimeRangeErr
+        checkValidUtxo = pif validUtxo checkValidTimeRange invalidUtxoErr
+        checkAll = pif validAmt checkValidUtxo invalidAmtErr
+       in
+        pif
+          ( checkIfBurning
+              #|| checkAll
+          )
+          (pconstant ())
+          (ptraceError "Expected burning of the token or All other checks to validate.")
+
+  sentTo
+    :: Term
+         s
+         ( PCurrencySymbol
+             :--> PTokenName
+             :--> PV2.PTxInfo
+             :--> PV2.PTxOut
+         )
+  sentTo = plam $ \cs tn info ->
+    precList
+      ( \self txOut txOuts ->
           pif
-            ( checkIfBurning
-                #|| checkAll
-            )
-            (pconstant ())
-            (ptraceError "Expected burning of the token or All other checks to validate.")
+            ((pvalueOf # pfromData (pfield @"value" # txOut) # cs # tn) #== 1)
+            txOut
+            (self # txOuts)
+      )
+      (const $ ptraceError "The token must be present in any output UTxO.")
+      # (pfield @"outputs" # info)
 
-    sentTo
-      :: Term
-           s
-           ( PCurrencySymbol
-               :--> PTokenName
-               :--> PV2.PTxInfo
-               :--> PV2.PTxOut
-           )
-    sentTo = plam $ \cs tn info ->
-      precList
-        ( \self txOut txOuts ->
-            pif
-              ((pvalueOf # pfromData (pfield @"value" # txOut) # cs # tn) #== 1)
-              txOut
-              (self # txOuts)
-        )
-        (const $ ptraceError "The token must be present in any output UTxO.")
-        # (pfield @"outputs" # info)
-
-    duringSale
-      :: Term
-           s
-           ( PPOSIXTime
-               :--> PPOSIXTime
-               :--> PV2.PTxInfo
-               :--> PBool
-           )
-    duringSale = plam $ \startT endT info ->
-      pcontains # (pinterval # startT # endT) # (pfield @"validRange" # info)
+  duringSale
+    :: Term
+         s
+         ( PPOSIXTime
+             :--> PPOSIXTime
+             :--> PV2.PTxInfo
+             :--> PBool
+         )
+  duringSale = plam $ \startT endT info ->
+    pcontains # (pinterval # startT # endT) # (pfield @"validRange" # info)

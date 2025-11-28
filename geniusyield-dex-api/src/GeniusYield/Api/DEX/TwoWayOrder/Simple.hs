@@ -3,37 +3,35 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module GeniusYield.Api.DEX.TwoWayOrder.Simple
-  ( SingleReverseParams (..)
-  , SingleFixedPlaceParams (..)
-  , SingleFixedFillParams (..)
-  , singleFixedPlace
-  , singleFixedFill
-  , singleCancel
-  )
-where
+module GeniusYield.Api.DEX.TwoWayOrder.Simple (
+  SingleReverseParams (..),
+  SingleFixedPlaceParams (..),
+  SingleFixedFillParams (..),
+  singleFixedPlace,
+  singleFixedFill,
+  singleCancel,
+) where
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Strict.Tuple (Pair ((:!:)))
-import GeniusYield.Imports
-import GeniusYield.TxBuilder.Common (GYTxSkeleton)
-import GeniusYield.Types
-
-import GeniusYield.Api.DEX.TwoWayOrder
-  ( TWDirectionSpec (..)
-  , TWFillDirection
-  , TWFillSpec (..)
-  , TWORef
-  , TWPlaceSpec (..)
-  , TWPriceSpec (..)
-  , cancelTwoWayOrders
-  , fillTwoWayOrders
-  , getTwoWayOrderInfo
-  , placeTwoWayOrders
-  )
+import GeniusYield.Api.DEX.TwoWayOrder (
+  TWDirectionSpec (..),
+  TWFillDirection,
+  TWFillSpec (..),
+  TWORef,
+  TWPlaceSpec (..),
+  TWPriceSpec (..),
+  cancelTwoWayOrders,
+  fillTwoWayOrders,
+  getTwoWayOrderInfo,
+  placeTwoWayOrders,
+ )
 import GeniusYield.Api.DEX.TwoWayOrderConfig (RefTWOCD (..))
 import GeniusYield.Api.Oracle (OracleCertificate)
 import GeniusYield.Api.Types (GYApiMonad)
+import GeniusYield.Imports
+import GeniusYield.TxBuilder.Common (GYTxSkeleton)
+import GeniusYield.Types
 
 {- | Parameters describing the reverse leg of a fixed-price order.
 
@@ -42,9 +40,9 @@ When provided, the resulting specification becomes a true two-way order with
 both straight and reverse legs defined explicitly.
 -}
 data SingleReverseParams = SingleReverseParams
-  { srpAmount :: !Natural
-  , srpAsset :: !GYAssetClass
-  , srpPrice :: !GYRational
+  { srpAmount :: !Natural,
+    srpAsset :: !GYAssetClass,
+    srpPrice :: !GYRational
   }
   deriving stock (Eq, Show)
 
@@ -55,25 +53,25 @@ and constrains the builder to the fixed-price path so the command layer does
 not need to worry about the richer relative/oracle-based flows.
 -}
 data SingleFixedPlaceParams = SingleFixedPlaceParams
-  { sfppOwner :: !GYAddress
-  , sfppOfferAsset :: !GYAssetClass
-  , sfppOfferAmount :: !Natural
-  , sfppAskAsset :: !GYAssetClass
-  , sfppStraightPrice :: !GYRational
-  , sfppReverse :: !(Maybe SingleReverseParams)
-  , sfppStart :: !(Maybe GYTime)
-  , sfppEnd :: !(Maybe GYTime)
-  , sfppStakeCredential :: !(Maybe GYStakeCredential)
+  { sfppOwner :: !GYAddress,
+    sfppOfferAsset :: !GYAssetClass,
+    sfppOfferAmount :: !Natural,
+    sfppAskAsset :: !GYAssetClass,
+    sfppStraightPrice :: !GYRational,
+    sfppReverse :: !(Maybe SingleReverseParams),
+    sfppStart :: !(Maybe GYTime),
+    sfppEnd :: !(Maybe GYTime),
+    sfppStakeCredential :: !(Maybe GYStakeCredential)
   }
   deriving stock (Eq, Show)
 
 -- | Parameters used when filling a single fixed-price order.
 data SingleFixedFillParams = SingleFixedFillParams
-  { sffpOrderRef :: !GYTxOutRef
-  , sffpDirection :: !TWFillDirection
-  , sffpAmount :: !Natural
-  , sffpOracleCertificate :: !(Maybe OracleCertificate)
-  , sffpRecipient :: !GYAddress
+  { sffpOrderRef :: !GYTxOutRef,
+    sffpDirection :: !TWFillDirection,
+    sffpAmount :: !Natural,
+    sffpOracleCertificate :: !(Maybe OracleCertificate),
+    sffpRecipient :: !GYAddress
   }
   deriving stock (Eq, Show)
 
@@ -92,7 +90,7 @@ singleFixedPlace twor refCfg params =
   let
     spec = toPlaceSpec params
     RefTWOCD (cfgRef :!: twocd) = refCfg
-  in
+   in
     placeTwoWayOrders twor (spec :| []) cfgRef twocd
 
 {- | Build the transaction skeleton necessary to fill a single fixed-price
@@ -123,32 +121,32 @@ singleCancel twor orderRef = do
 toPlaceSpec :: SingleFixedPlaceParams -> TWPlaceSpec
 toPlaceSpec SingleFixedPlaceParams {..} =
   TWPlaceSpec
-    { twpsOwner = sfppOwner
-    , twpsDirection = directionSpec
-    , twpsPriceSpec = priceSpec
-    , twpsStart = sfppStart
-    , twpsEnd = sfppEnd
-    , twpsAddLov = 0
-    , twpsStakeCred = sfppStakeCredential
+    { twpsOwner = sfppOwner,
+      twpsDirection = directionSpec,
+      twpsPriceSpec = priceSpec,
+      twpsStart = sfppStart,
+      twpsEnd = sfppEnd,
+      twpsAddLov = 0,
+      twpsStakeCred = sfppStakeCredential
     }
-  where
-    directionSpec = case sfppReverse of
-      Nothing -> TWOneWay (sfppOfferAmount, sfppOfferAsset) sfppAskAsset 0
-      Just SingleReverseParams {srpAmount, srpAsset} ->
-        TWTwoway (sfppOfferAmount, sfppOfferAsset) (srpAmount, srpAsset)
+ where
+  directionSpec = case sfppReverse of
+    Nothing -> TWOneWay (sfppOfferAmount, sfppOfferAsset) sfppAskAsset 0
+    Just SingleReverseParams {srpAmount, srpAsset} ->
+      TWTwoway (sfppOfferAmount, sfppOfferAsset) (srpAmount, srpAsset)
 
-    priceSpec = case sfppReverse of
-      Nothing -> TWPriceFixed sfppStraightPrice Nothing
-      Just SingleReverseParams {srpPrice} ->
-        TWPriceFixed sfppStraightPrice (Just srpPrice)
+  priceSpec = case sfppReverse of
+    Nothing -> TWPriceFixed sfppStraightPrice Nothing
+    Just SingleReverseParams {srpPrice} ->
+      TWPriceFixed sfppStraightPrice (Just srpPrice)
 
 -- Internal: convert convenience params into the underlying fill spec.
 toFillSpec :: SingleFixedFillParams -> TWFillSpec
 toFillSpec SingleFixedFillParams {..} =
   TWFillSpec
-    { twfsOrderRef = sffpOrderRef
-    , twfsDirection = sffpDirection
-    , twfsAmount = sffpAmount
-    , twfsOracleCertificate = sffpOracleCertificate
-    , twfsRecipient = sffpRecipient
+    { twfsOrderRef = sffpOrderRef,
+      twfsDirection = sffpDirection,
+      twfsAmount = sffpAmount,
+      twfsOracleCertificate = sffpOracleCertificate,
+      twfsRecipient = sffpRecipient
     }

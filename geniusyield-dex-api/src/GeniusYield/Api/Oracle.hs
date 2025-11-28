@@ -1,39 +1,38 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module GeniusYield.Api.Oracle
-  ( -- * Core types
-    Price (..)
-  , PriceIndicator (..)
-  , OracleCertificate (..)
-  , OracleQuote (..)
-  , FreshnessConstraints (..)
-  , noFreshnessConstraints
-  , freshnessConstraints
-  , freshnessConstraintsSeconds
+module GeniusYield.Api.Oracle (
+  -- * Core types
+  Price (..),
+  PriceIndicator (..),
+  OracleCertificate (..),
+  OracleQuote (..),
+  FreshnessConstraints (..),
+  noFreshnessConstraints,
+  freshnessConstraints,
+  freshnessConstraintsSeconds,
 
-    -- * Signing helpers
-  , mkOracleCertificate
+  -- * Signing helpers
+  mkOracleCertificate,
 
-    -- * Aggregator configuration
-  , OracleCfg (..)
-  , defaultOracleCfg
+  -- * Aggregator configuration
+  OracleCfg (..),
+  defaultOracleCfg,
 
-    -- * Providers & aggregators
-  , PriceProvider (..)
-  , OracleAggregator
-  , mkAggregator
-  , mkAggregatorWithClock
+  -- * Providers & aggregators
+  PriceProvider (..),
+  OracleAggregator,
+  mkAggregator,
+  mkAggregatorWithClock,
 
-    -- * Estimation
-  , oracleEstimate
-  , oracleEstimateUnbounded
+  -- * Estimation
+  oracleEstimate,
+  oracleEstimateUnbounded,
 
-    -- * Testing helpers
-  , newMockProvider
-  , SignatureOffchain (..)
-  )
-where
+  -- * Testing helpers
+  newMockProvider,
+  SignatureOffchain (..),
+) where
 
 import Cardano.Api qualified as Api
 import Codec.Serialise (serialise)
@@ -51,6 +50,7 @@ import Data.Map.Strict qualified as Map
 import Data.Ratio (denominator, numerator)
 import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, getCurrentTime, secondsToNominalDiffTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
+import GeniusYield.Crypto (SignatureOffchain (..))
 import GeniusYield.Imports
 import GeniusYield.Types (GYAssetClass (..), GYPaymentSigningKey, assetClassToPlutus, paymentSigningKeyToApi)
 import PlutusLedgerApi.V1 (Data (..))
@@ -59,8 +59,6 @@ import PlutusTx qualified
 import PlutusTx.Builtins (fromBuiltin)
 import System.Environment (lookupEnv)
 import Text.Read (readMaybe)
-
-import GeniusYield.Crypto (SignatureOffchain (..))
 
 -- | Minimal price wrapper for clarity.
 newtype Price = Price {getPrice :: Rational}
@@ -77,18 +75,18 @@ data PriceIndicator
 
 -- | Signed oracle certificate (price + timestamp + signature).
 data OracleCertificate = OracleCertificate
-  { ocPrice :: !Price
-  , ocBaseAsset :: !GYAssetClass
-  , ocQuoteAsset :: !GYAssetClass
-  , ocTimestamp :: !UTCTime
-  , ocSignature :: !SignatureOffchain
+  { ocPrice :: !Price,
+    ocBaseAsset :: !GYAssetClass,
+    ocQuoteAsset :: !GYAssetClass,
+    ocTimestamp :: !UTCTime,
+    ocSignature :: !SignatureOffchain
   }
   deriving stock (Eq, Generic, Show)
 
 -- | Aggregated oracle quote paired with indicator metadata.
 data OracleQuote = OracleQuote
-  { oqIndicator :: !PriceIndicator
-  , oqCertificate :: !(Maybe OracleCertificate)
+  { oqIndicator :: !PriceIndicator,
+    oqCertificate :: !(Maybe OracleCertificate)
   }
   deriving stock (Eq, Generic, Show)
 
@@ -101,25 +99,25 @@ mkOracleCertificate
   -> OracleCertificate
 mkOracleCertificate sk baseAsset quoteAsset price timestamp =
   OracleCertificate
-    { ocPrice = Price price
-    , ocBaseAsset = baseAsset
-    , ocQuoteAsset = quoteAsset
-    , ocTimestamp = timestamp
-    , ocSignature = SignatureOffchain (BA.convert signature)
+    { ocPrice = Price price,
+      ocBaseAsset = baseAsset,
+      ocQuoteAsset = quoteAsset,
+      ocTimestamp = timestamp,
+      ocSignature = SignatureOffchain (BA.convert signature)
     }
-  where
-    timestampMs = floor (utcTimeToPOSIXSeconds timestamp * 1000)
-    messageBytes =
-      LBS.toStrict (serialise $ priceTimestampData baseAsset quoteAsset price timestampMs)
-    secretBytes = Api.serialiseToRawBytes $ paymentSigningKeyToApi sk
-    signature = case Crypto.secretKey secretBytes of
-      CryptoFailed err -> error $ "Invalid oracle signing key: " <> show err
-      CryptoPassed secretKey -> Crypto.sign secretKey (Crypto.toPublic secretKey) messageBytes
+ where
+  timestampMs = floor (utcTimeToPOSIXSeconds timestamp * 1000)
+  messageBytes =
+    LBS.toStrict (serialise $ priceTimestampData baseAsset quoteAsset price timestampMs)
+  secretBytes = Api.serialiseToRawBytes $ paymentSigningKeyToApi sk
+  signature = case Crypto.secretKey secretBytes of
+    CryptoFailed err -> error $ "Invalid oracle signing key: " <> show err
+    CryptoPassed secretKey -> Crypto.sign secretKey (Crypto.toPublic secretKey) messageBytes
 
 -- | Constraints applied when reusing cached certificates.
 data FreshnessConstraints = FreshnessConstraints
-  { fcValidFor :: !NominalDiffTime
-  , fcSigningSlack :: !NominalDiffTime
+  { fcValidFor :: !NominalDiffTime,
+    fcSigningSlack :: !NominalDiffTime
   }
   deriving stock (Eq, Generic, Show)
 
@@ -135,15 +133,15 @@ freshnessConstraints = FreshnessConstraints
 freshnessConstraintsSeconds :: Integer -> Integer -> FreshnessConstraints
 freshnessConstraintsSeconds valid slack =
   FreshnessConstraints (secs valid) (secs slack)
-  where
-    secs :: Integer -> NominalDiffTime
-    secs = secondsToNominalDiffTime . fromIntegral . max 0
+ where
+  secs :: Integer -> NominalDiffTime
+  secs = secondsToNominalDiffTime . fromIntegral . max 0
 
 -- | Aggregator configuration.
 data OracleCfg = OracleCfg
-  { ocThreshold1 :: !Double
-  , ocThreshold2 :: !Double
-  , ocCacheDuration :: !NominalDiffTime
+  { ocThreshold1 :: !Double,
+    ocThreshold2 :: !Double,
+    ocCacheDuration :: !NominalDiffTime
   }
   deriving stock (Eq, Generic, Show)
 
@@ -151,15 +149,15 @@ data OracleCfg = OracleCfg
 defaultOracleCfg :: OracleCfg
 defaultOracleCfg =
   OracleCfg
-    { ocThreshold1 = 0.3
-    , ocThreshold2 = 0.6
-    , ocCacheDuration = secondsToNominalDiffTime 300
+    { ocThreshold1 = 0.3,
+      ocThreshold2 = 0.6,
+      ocCacheDuration = secondsToNominalDiffTime 300
     }
 
 -- | A simple provider interface (IO for now; can generalise later).
 data PriceProvider = PriceProvider
-  { ppName :: !String
-  , ppGet :: !(GYAssetClass -> GYAssetClass -> IO (Either String OracleCertificate))
+  { ppName :: !String,
+    ppGet :: !(GYAssetClass -> GYAssetClass -> IO (Either String OracleCertificate))
   }
 
 type CacheKey = (GYAssetClass, GYAssetClass)
@@ -168,11 +166,11 @@ type CacheEntry = (UTCTime, OracleQuote)
 
 -- | Oracle aggregator with cache.
 data OracleAggregator = OA
-  { oaCfg :: !OracleCfg
-  , oaProv :: !(NonEmpty PriceProvider)
-  , oaWeights :: !(NonEmpty Int)
-  , oaCache :: !(MVar (Map.Map CacheKey CacheEntry))
-  , oaClock :: !(IO UTCTime)
+  { oaCfg :: !OracleCfg,
+    oaProv :: !(NonEmpty PriceProvider),
+    oaWeights :: !(NonEmpty Int),
+    oaCache :: !(MVar (Map.Map CacheKey CacheEntry)),
+    oaClock :: !(IO UTCTime)
   }
 
 -- | Construct an aggregator using the real clock.
@@ -203,8 +201,8 @@ oracleEstimate agg freshness base quote
       quoteAda <- oracleEstimateDirect agg freshness quote GYLovelace
       pure $ combineDerivedQuotes baseAda quoteAda
   | otherwise = oracleEstimateDirect agg freshness base quote
-  where
-    requiresDerived = base /= GYLovelace && quote /= GYLovelace
+ where
+  requiresDerived = base /= GYLovelace && quote /= GYLovelace
 
 -- | Estimate price with no freshness constraints.
 oracleEstimateUnbounded :: OracleAggregator -> GYAssetClass -> GYAssetClass -> IO OracleQuote
@@ -225,74 +223,74 @@ oracleEstimateDirect OA {..} freshness base quote = do
         then pure quoteCached
         else refresh
     Nothing -> refresh
-  where
-    ttl = ocCacheDuration oaCfg
-    key = (base, quote)
+ where
+  ttl = ocCacheDuration oaCfg
+  key = (base, quote)
 
-    refresh :: IO OracleQuote
-    refresh = do
-      quoteFresh <- freshEstimate
-      when (ttl > 0) $ storeCached key quoteFresh
-      pure quoteFresh
+  refresh :: IO OracleQuote
+  refresh = do
+    quoteFresh <- freshEstimate
+    when (ttl > 0) $ storeCached key quoteFresh
+    pure quoteFresh
 
-    fetchCached :: NominalDiffTime -> CacheKey -> IO (Maybe CacheEntry)
-    fetchCached ttl' cacheKey = modifyMVar oaCache $ \cacheMap -> do
-      now <- oaClock
-      let (cacheMap', result) =
-            case Map.lookup cacheKey cacheMap of
-              Just entry@(ts, _)
-                | diffUTCTime now ts < ttl' -> (cacheMap, Just entry)
-                | otherwise -> (Map.delete cacheKey cacheMap, Nothing)
-              Nothing -> (cacheMap, Nothing)
-      pure (cacheMap', result)
+  fetchCached :: NominalDiffTime -> CacheKey -> IO (Maybe CacheEntry)
+  fetchCached ttl' cacheKey = modifyMVar oaCache $ \cacheMap -> do
+    now <- oaClock
+    let (cacheMap', result) =
+          case Map.lookup cacheKey cacheMap of
+            Just entry@(ts, _)
+              | diffUTCTime now ts < ttl' -> (cacheMap, Just entry)
+              | otherwise -> (Map.delete cacheKey cacheMap, Nothing)
+            Nothing -> (cacheMap, Nothing)
+    pure (cacheMap', result)
 
-    storeCached :: CacheKey -> OracleQuote -> IO ()
-    storeCached cacheKey quoteFresh = do
-      ts <- oaClock
-      modifyMVar_ oaCache $ \cacheMap ->
-        pure $ Map.insert cacheKey (ts, quoteFresh) cacheMap
+  storeCached :: CacheKey -> OracleQuote -> IO ()
+  storeCached cacheKey quoteFresh = do
+    ts <- oaClock
+    modifyMVar_ oaCache $ \cacheMap ->
+      pure $ Map.insert cacheKey (ts, quoteFresh) cacheMap
 
-    freshEstimate :: IO OracleQuote
-    freshEstimate = do
-      let
-        provs = NE.toList oaProv
-        weights = NE.toList oaWeights
-      results <- mapM (\p -> ppGet p base quote) provs
-      let
-        zipped = zip3 provs weights results
-        successes :: [(Int, OracleCertificate)]
-        successes =
-          [ (w, cert)
-          | (_, w, Right cert) <- zipped
-          , ocBaseAsset cert == base
-          , ocQuoteAsset cert == quote
-          ]
-        mismatched =
-          [ ppName provider
-              ++ ":asset-mismatch"
-          | (provider, _, Right cert) <- zipped
-          , ocBaseAsset cert /= base || ocQuoteAsset cert /= quote
-          ]
-        errs =
-          [ppName p | (p, _, Left _) <- zipped] ++ mismatched
-      case successes of
-        [] -> pure $ OracleQuote PriceUnavailable Nothing
-        xs@((_, firstCert) : _) -> do
-          let
-            values = NE.fromList $ map (fromRational . getPrice . ocPrice . snd) xs
-            rsd = relStdDev values
-            t1 = ocThreshold1 oaCfg
-            t2 = ocThreshold2 oaCfg
-            price = ocPrice firstCert
-            indicator
-              | rsd > t2 = PriceMismatch2
-              | rsd > t1 = PriceMismatch1
-              | not (null errs) = PriceSourceFail errs price
-              | otherwise = PriceAverage price
-            certificate
-              | indicatorHasPrice indicator = Just firstCert
-              | otherwise = Nothing
-          pure $ OracleQuote indicator certificate
+  freshEstimate :: IO OracleQuote
+  freshEstimate = do
+    let
+      provs = NE.toList oaProv
+      weights = NE.toList oaWeights
+    results <- mapM (\p -> ppGet p base quote) provs
+    let
+      zipped = zip3 provs weights results
+      successes :: [(Int, OracleCertificate)]
+      successes =
+        [ (w, cert)
+        | (_, w, Right cert) <- zipped,
+          ocBaseAsset cert == base,
+          ocQuoteAsset cert == quote
+        ]
+      mismatched =
+        [ ppName provider
+            ++ ":asset-mismatch"
+        | (provider, _, Right cert) <- zipped,
+          ocBaseAsset cert /= base || ocQuoteAsset cert /= quote
+        ]
+      errs =
+        [ppName p | (p, _, Left _) <- zipped] ++ mismatched
+    case successes of
+      [] -> pure $ OracleQuote PriceUnavailable Nothing
+      xs@((_, firstCert) : _) -> do
+        let
+          values = NE.fromList $ map (fromRational . getPrice . ocPrice . snd) xs
+          rsd = relStdDev values
+          t1 = ocThreshold1 oaCfg
+          t2 = ocThreshold2 oaCfg
+          price = ocPrice firstCert
+          indicator
+            | rsd > t2 = PriceMismatch2
+            | rsd > t1 = PriceMismatch1
+            | not (null errs) = PriceSourceFail errs price
+            | otherwise = PriceAverage price
+          certificate
+            | indicatorHasPrice indicator = Just firstCert
+            | otherwise = Nothing
+        pure $ OracleQuote indicator certificate
 
 shouldReuse :: FreshnessConstraints -> GYAssetClass -> GYAssetClass -> UTCTime -> OracleQuote -> Bool
 shouldReuse FreshnessConstraints {..} expectedBase expectedQuote now OracleQuote {..}
@@ -303,7 +301,7 @@ shouldReuse FreshnessConstraints {..} expectedBase expectedQuote now OracleQuote
         let
           age = diffUTCTime now ocTimestamp
           allowance = max 0 (fcValidFor - fcSigningSlack)
-        in
+         in
           ocBaseAsset == expectedBase
             && ocQuoteAsset == expectedQuote
             && age <= allowance
@@ -316,8 +314,8 @@ indicatorHasPrice _ = False
 combineDerivedQuotes :: OracleQuote -> OracleQuote -> OracleQuote
 combineDerivedQuotes baseQuote quoteQuote =
   OracleQuote
-    { oqIndicator = combineDerivedIndicators (oqIndicator baseQuote) (oqIndicator quoteQuote)
-    , oqCertificate = Nothing
+    { oqIndicator = combineDerivedIndicators (oqIndicator baseQuote) (oqIndicator quoteQuote),
+      oqCertificate = Nothing
     }
 
 assetClassData :: GYAssetClass -> Data
@@ -326,18 +324,18 @@ assetClassData ac =
     AssetClass (CurrencySymbol policyBs, TokenName assetBs) ->
       PlutusTx.Constr
         0
-        [ PlutusTx.B (fromBuiltin policyBs)
-        , PlutusTx.B (fromBuiltin assetBs)
+        [ PlutusTx.B (fromBuiltin policyBs),
+          PlutusTx.B (fromBuiltin assetBs)
         ]
 
 priceTimestampData :: GYAssetClass -> GYAssetClass -> Rational -> Integer -> Data
 priceTimestampData baseAsset quoteAsset base ts =
   PlutusTx.Constr
     0
-    [ assetClassData baseAsset
-    , assetClassData quoteAsset
-    , PlutusTx.Constr 0 [PlutusTx.I (numerator base), PlutusTx.I (denominator base)]
-    , PlutusTx.I ts
+    [ assetClassData baseAsset,
+      assetClassData quoteAsset,
+      PlutusTx.Constr 0 [PlutusTx.I (numerator base), PlutusTx.I (denominator base)],
+      PlutusTx.I ts
     ]
 
 -- | Resolve cache TTL from the environment if provided.
@@ -352,9 +350,9 @@ resolveCacheDuration defaultTTL = do
 newMockProvider
   :: String
   -> IO
-       ( PriceProvider
-       , Maybe OracleCertificate -> IO ()
-       , IO Int
+       ( PriceProvider,
+         Maybe OracleCertificate -> IO (),
+         IO Int
        )
 newMockProvider name = do
   mv <- newMVar Nothing
@@ -370,9 +368,9 @@ newMockProvider name = do
         Nothing -> Left "mock failure"
         Just cert -> Right cert
   pure
-    ( PriceProvider name getF
-    , setVal
-    , readIORef hitsRef
+    ( PriceProvider name getF,
+      setVal,
+      readIORef hitsRef
     )
 
 -- Statistics helpers ---------------------------------------------------------
@@ -380,13 +378,13 @@ newMockProvider name = do
 relStdDev :: NonEmpty Double -> Double
 relStdDev (x1 :| [x2]) = abs (x1 - x2) / (x1 + x2)
 relStdDev xs = sqrt (mean ((\x -> (x - m) ^ (2 :: Int)) <$> xs)) / m
-  where
-    m = mean xs
+ where
+  m = mean xs
 
 mean :: Fractional a => NonEmpty a -> a
 mean xs =
   let n = fromIntegral (length (NE.toList xs))
-  in sum (NE.toList xs) / n
+   in sum (NE.toList xs) / n
 
 combineDerivedIndicators :: PriceIndicator -> PriceIndicator -> PriceIndicator
 combineDerivedIndicators baseInd quoteInd =
@@ -398,7 +396,7 @@ combineDerivedIndicators baseInd quoteInd =
             derivedPrice = Price (baseAda / quoteAda)
             severity = max (indicatorSeverity baseInd) (indicatorSeverity quoteInd)
             names = uniqueFailures baseInd quoteInd
-          in
+           in
             case severity of
               SevUnavailable -> PriceUnavailable
               SevMismatch2 -> PriceMismatch2
@@ -415,9 +413,9 @@ worstIndicator i1 i2 =
     SevMismatch1 -> PriceMismatch1
     SevSourceFail ->
       let names = uniqueFailures i1 i2
-      in case indicatorPrice i1 <|> indicatorPrice i2 of
-           Just price -> PriceSourceFail names price
-           Nothing -> PriceUnavailable
+       in case indicatorPrice i1 <|> indicatorPrice i2 of
+            Just price -> PriceSourceFail names price
+            Nothing -> PriceUnavailable
     SevAverage ->
       maybe
         PriceUnavailable

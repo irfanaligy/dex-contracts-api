@@ -6,37 +6,38 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
-module GeniusYield.OnChain.Plutarch.Utils
-  ( pfromMaybe
-  , ptoRational
-  , pceiling
-  , pfloor
-  , plookupTuple
-  , pmin
-  , ppairToRat
-  , pgetContinuingOutputUsingNft
-  , pgetContinuingOutputs
-  , pfindOwnInput
-  , pfindOutputWithNft
-  , pisAddressForScript
-  , pparseDatum
-  , pparseDatum'
-  , ptryFromData
-  , pelem'
-  , pallUnique
-  )
-where
+module GeniusYield.OnChain.Plutarch.Utils (
+  pfromMaybe,
+  ptoRational,
+  pceiling,
+  pfloor,
+  plookupTuple,
+  pmin,
+  ppairToRat,
+  pgetContinuingOutputUsingNft,
+  pgetContinuingOutputs,
+  pfindOwnInput,
+  pfindOutputWithNft,
+  pisAddressForScript,
+  pparseDatum,
+  pparseDatum',
+  ptryFromData,
+  pelem',
+  pallUnique,
+) where
 
-import Plutarch.Api.V1
-  ( KeyGuarantees (Unsorted)
-  , PAddress
-  , PCredential (..)
-  , PDatum
-  , PDatumHash
-  , PMap
-  , PTuple
-  , PTxOutRef
-  )
+import GeniusYield.OnChain.Plutarch.Types (PAssetClass (..))
+import GeniusYield.OnChain.Plutarch.Value (passetClassValueOf)
+import Plutarch.Api.V1 (
+  KeyGuarantees (Unsorted),
+  PAddress,
+  PCredential (..),
+  PDatum,
+  PDatumHash,
+  PMap,
+  PTuple,
+  PTxOutRef,
+ )
 import Plutarch.Api.V1.AssocMap qualified as PMap
 import Plutarch.Api.V1.Scripts (PScriptHash)
 import Plutarch.Api.V2 qualified as PV2
@@ -45,9 +46,6 @@ import Plutarch.Num
 import Plutarch.Positive (ptryPositive)
 import Plutarch.Prelude hiding (psingleton)
 import Plutarch.Rational qualified as PRational
-
-import GeniusYield.OnChain.Plutarch.Types (PAssetClass (..))
-import GeniusYield.OnChain.Plutarch.Value (passetClassValueOf)
 
 {- $setup
 
@@ -164,74 +162,74 @@ ptoRational :: Integer -> Integer -> Term s PRational
 ptoRational x y = pcon $ PRational (pfromInteger x) (pfromInteger y)
 
 pgetContinuingOutputUsingNft :: Term s (PAddress :--> PAssetClass :--> PBuiltinList PV2.PTxOut :--> PV2.PTxOut)
-pgetContinuingOutputUsingNft = phoistAcyclic
-  $ plam
-  $ \addressIn nftAC outputs ->
-    pmatch (pfind # (matches # addressIn # nftAC) # outputs) $ \case
-      PNothing -> ptraceError "no continuing output found"
-      PJust o -> o
-  where
-    matches :: Term s (PAddress :--> PAssetClass :--> PV2.PTxOut :--> PBool)
-    matches = phoistAcyclic
-      $ plam
-      $ \addressIn nftAC txOut ->
+pgetContinuingOutputUsingNft = phoistAcyclic $
+  plam $
+    \addressIn nftAC outputs ->
+      pmatch (pfind # (matches # addressIn # nftAC) # outputs) $ \case
+        PNothing -> ptraceError "no continuing output found"
+        PJust o -> o
+ where
+  matches :: Term s (PAddress :--> PAssetClass :--> PV2.PTxOut :--> PBool)
+  matches = phoistAcyclic $
+    plam $
+      \addressIn nftAC txOut ->
         pletFields @'["address", "value"] txOut $ \txOut' ->
           (passetClassValueOf # getField @"value" txOut' # nftAC #== 1) #&& (addressIn #== getField @"address" txOut')
 
 -- V2 versions of some API utils from upstream.
 
 pgetContinuingOutputs :: Term s (PBuiltinList PV2.PTxInInfo :--> PBuiltinList PV2.PTxOut :--> PTxOutRef :--> PBuiltinList PV2.PTxOut)
-pgetContinuingOutputs = phoistAcyclic
-  $ plam
-  $ \inputs outputs outRef ->
-    pmatch (pfindOwnInput # inputs # outRef) $ \case
-      PJust tx -> do
-        let
-          resolved = pfield @"resolved" # tx
-          outAddr = pfield @"address" # resolved
-        pfilter # (matches # outAddr) # outputs
-      PNothing ->
-        ptraceError "can't get any continuing outputs"
-  where
-    matches :: Term s (PAddress :--> PV2.PTxOut :--> PBool)
-    matches = phoistAcyclic
-      $ plam
-      $ \adr txOut ->
+pgetContinuingOutputs = phoistAcyclic $
+  plam $
+    \inputs outputs outRef ->
+      pmatch (pfindOwnInput # inputs # outRef) $ \case
+        PJust tx -> do
+          let
+            resolved = pfield @"resolved" # tx
+            outAddr = pfield @"address" # resolved
+          pfilter # (matches # outAddr) # outputs
+        PNothing ->
+          ptraceError "can't get any continuing outputs"
+ where
+  matches :: Term s (PAddress :--> PV2.PTxOut :--> PBool)
+  matches = phoistAcyclic $
+    plam $
+      \adr txOut ->
         adr #== pfield @"address" # txOut
 
 pfindOwnInput :: Term s (PBuiltinList PV2.PTxInInfo :--> PTxOutRef :--> PMaybe PV2.PTxInInfo)
-pfindOwnInput = phoistAcyclic
-  $ plam
-  $ \inputs outRef ->
-    pfind # (matches # outRef) # inputs
-  where
-    matches :: Term s (PTxOutRef :--> PV2.PTxInInfo :--> PBool)
-    matches = phoistAcyclic
-      $ plam
-      $ \outref txininfo ->
+pfindOwnInput = phoistAcyclic $
+  plam $
+    \inputs outRef ->
+      pfind # (matches # outRef) # inputs
+ where
+  matches :: Term s (PTxOutRef :--> PV2.PTxInInfo :--> PBool)
+  matches = phoistAcyclic $
+    plam $
+      \outref txininfo ->
         outref #== pfield @"outRef" # txininfo
 
 -- | Finds the first output that contains the given NFT.
 pfindOutputWithNft :: Term s (PBuiltinList PV2.PTxOut :--> PAssetClass :--> PMaybe PV2.PTxOut)
-pfindOutputWithNft = phoistAcyclic
-  $ plam
-  $ \outputs reqAsset ->
-    pfind # (matches # reqAsset) # outputs
-  where
-    matches :: Term s (PAssetClass :--> PV2.PTxOut :--> PBool)
-    matches = phoistAcyclic
-      $ plam
-      $ \reqAsset txOut ->
+pfindOutputWithNft = phoistAcyclic $
+  plam $
+    \outputs reqAsset ->
+      pfind # (matches # reqAsset) # outputs
+ where
+  matches :: Term s (PAssetClass :--> PV2.PTxOut :--> PBool)
+  matches = phoistAcyclic $
+    plam $
+      \reqAsset txOut ->
         passetClassValueOf # (pfield @"value" # txOut) # reqAsset #== 1
 
 -- | Checks whether the given address belongs to the script with the given hash.
 pisAddressForScript :: Term s (PAddress :--> PScriptHash :--> PBool)
-pisAddressForScript = phoistAcyclic
-  $ plam
-  $ \addr scrHash ->
-    pmatch (pfield @"credential" # addr) $ \case
-      PPubKeyCredential _ -> pconstant False
-      PScriptCredential x -> scrHash #== pfield @"_0" # x
+pisAddressForScript = phoistAcyclic $
+  plam $
+    \addr scrHash ->
+      pmatch (pfield @"credential" # addr) $ \case
+        PPubKeyCredential _ -> pconstant False
+        PScriptCredential x -> scrHash #== pfield @"_0" # x
 
 pparseDatum
   :: forall a s
@@ -242,12 +240,12 @@ pparseDatum
            :--> PMap 'Unsorted PDatumHash PDatum
            :--> PMaybe (PAsData a)
        )
-pparseDatum = phoistAcyclic
-  $ plam
-  $ \dh datums ->
-    pmatch (PMap.plookup # dh # datums) $ \case
-      PNothing -> pcon PNothing
-      PJust datm -> pcon . PJust . ptryFromData $ pto datm
+pparseDatum = phoistAcyclic $
+  plam $
+    \dh datums ->
+      pmatch (PMap.plookup # dh # datums) $ \case
+        PNothing -> pcon PNothing
+        PJust datm -> pcon . PJust . ptryFromData $ pto datm
 
 pparseDatum'
   :: forall a s
@@ -258,17 +256,17 @@ pparseDatum'
            :--> PMap 'Unsorted PDatumHash PDatum
            :--> PAsData a
        )
-pparseDatum' = phoistAcyclic
-  $ plam
-  $ \od datums ->
-    pmatch od $ \case
-      PV2.PNoOutputDatum _ -> ptraceError "expected output datum"
-      PV2.POutputDatum x -> plet (pfield @"outputDatum" # x)
-        $ \(datm :: Term _ PDatum) ->
-          ptryFromData $ pto datm
-      PV2.POutputDatumHash x -> pmatch (PMap.plookup # (pfield @"datumHash" # x) # datums) $ \case
-        PNothing -> ptraceError "output datum not found"
-        PJust datm -> ptryFromData (pto datm)
+pparseDatum' = phoistAcyclic $
+  plam $
+    \od datums ->
+      pmatch od $ \case
+        PV2.PNoOutputDatum _ -> ptraceError "expected output datum"
+        PV2.POutputDatum x -> plet (pfield @"outputDatum" # x) $
+          \(datm :: Term _ PDatum) ->
+            ptryFromData $ pto datm
+        PV2.POutputDatumHash x -> pmatch (PMap.plookup # (pfield @"datumHash" # x) # datums) $ \case
+          PNothing -> ptraceError "output datum not found"
+          PJust datm -> ptryFromData (pto datm)
 
 ptryFromData :: forall a s. PTryFrom PData (PAsData a) => Term s PData -> Term s (PAsData a)
 ptryFromData x = unTermCont $ fst <$> tcont (ptryFrom @(PAsData a) x)
@@ -295,20 +293,20 @@ Right (Script {unScript = Program {_progAnn = (), _progVer = Version () 1 0 0, _
 -}
 pelem' :: (PEq a, PIsListLike list a) => Term s (a :--> list a :--> PMaybe (list a))
 pelem' =
-  phoistAcyclic
-    $ plam
-    $ \needle ->
-      precList
-        ( \self x xs ->
-            pif
-              (x #== needle)
-              (pjust # xs)
-              ( pmatch (self # xs) $ \case
-                  PNothing -> pcon PNothing
-                  PJust xs' -> pjust #$ pcons # x # xs'
-              )
-        )
-        (\_self -> pcon PNothing)
+  phoistAcyclic $
+    plam $
+      \needle ->
+        precList
+          ( \self x xs ->
+              pif
+                (x #== needle)
+                (pjust # xs)
+                ( pmatch (self # xs) $ \case
+                    PNothing -> pcon PNothing
+                    PJust xs' -> pjust #$ pcons # x # xs'
+                )
+          )
+          (\_self -> pcon PNothing)
 
 {- | Check if all the elements in the list are unique.
 
@@ -323,7 +321,7 @@ Right (Script {unScript = Program {_progAnn = (), _progVer = Version () 1 0 0, _
 -}
 pallUnique :: (PEq a, PIsListLike list a) => Term s (list a :--> PBool)
 pallUnique =
-  phoistAcyclic
-    $ precList
+  phoistAcyclic $
+    precList
       (\self x xs -> pif (pelem # x # xs) (pcon PFalse) (self # xs))
       (const $ pcon PTrue)

@@ -6,28 +6,28 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
-module GeniusYield.OnChain.Plutarch.Value
-  ( psubtractValue
-  , passetClassValue
-  , passetClassValuePositive
-  , psingletonPositiveData
-  , passetClassValueOf
-  , pisNonNegative
-  , passetClass
-  , plovelace
-  , pgeq
-  , pleq
-  , pvalTotalEntries
-  )
-where
+module GeniusYield.OnChain.Plutarch.Value (
+  psubtractValue,
+  passetClassValue,
+  passetClassValuePositive,
+  psingletonPositiveData,
+  passetClassValueOf,
+  pisNonNegative,
+  passetClass,
+  plovelace,
+  pgeq,
+  pleq,
+  pvalTotalEntries,
+) where
 
-import Plutarch.Api.V1
-  ( AmountGuarantees (..)
-  , KeyGuarantees (..)
-  , PCurrencySymbol
-  , PTokenName
-  , PValue
-  )
+import GeniusYield.OnChain.Plutarch.Types (PAssetClass (..))
+import Plutarch.Api.V1 (
+  AmountGuarantees (..),
+  KeyGuarantees (..),
+  PCurrencySymbol,
+  PTokenName,
+  PValue,
+ )
 import Plutarch.Api.V1.AssocMap qualified as AssocMap
 import Plutarch.Api.V1.AssocMap qualified as PMap
 import Plutarch.Api.V1.Value qualified as PValue
@@ -37,8 +37,6 @@ import Plutarch.Prelude
 import Plutarch.Unsafe qualified as PUNSAFE
 import PlutusLedgerApi.V1.Value (adaSymbol, adaToken)
 import PlutusTx.Monoid qualified
-
-import GeniusYield.OnChain.Plutarch.Types (PAssetClass (..))
 
 {- $setup
 
@@ -149,29 +147,29 @@ psingletonPositiveData
            :--> PAsData PInteger
            :--> PValue 'Sorted 'Positive
        )
-psingletonPositiveData = phoistAcyclic
-  $ plam
-  $ \symbol token amount ->
-    pif
-      (pfromData amount #<= 0)
-      mempty
-      ( PUNSAFE.punsafeDowncast
-          ( AssocMap.psingletonData
-              # symbol
-              #$ pdata
-              $ AssocMap.psingletonData # token # amount
-          )
-      )
+psingletonPositiveData = phoistAcyclic $
+  plam $
+    \symbol token amount ->
+      pif
+        (pfromData amount #<= 0)
+        mempty
+        ( PUNSAFE.punsafeDowncast
+            ( AssocMap.psingletonData
+                # symbol
+                #$ pdata
+                $ AssocMap.psingletonData # token # amount
+            )
+        )
 
 -- | Check if a 'PValue' is non negative (all amounts are greater than equal to 0).
 pisNonNegative :: forall any s. (forall s'. Semigroup (Term s' (PValue 'Sorted any))) => Term s (PValue 'Sorted any :--> PBool)
 pisNonNegative = phoistAcyclic $ plam $ \x -> PMap.pall # plam (\submap -> PMap.pall # plam (0 #<=) # submap) # pto x
 
 passetClass :: Term s (PCurrencySymbol :--> PTokenName :--> PAssetClass)
-passetClass = phoistAcyclic
-  $ plam
-  $ \cs tk ->
-    pcon $ PAssetClass $ pdcons @"currencySymbol" # pdata cs #$ pdcons @"tokenName" # pdata tk # pdnil
+passetClass = phoistAcyclic $
+  plam $
+    \cs tk ->
+      pcon $ PAssetClass $ pdcons @"currencySymbol" # pdata cs #$ pdcons @"tokenName" # pdata tk # pdnil
 
 plovelace :: ClosedTerm PAssetClass
 plovelace = passetClass # pconstant adaSymbol # pconstant adaToken
@@ -198,5 +196,5 @@ Right (Script {unScript = Program {_progAnn = (), _progVer = Version () 1 0 0, _
 -}
 pvalTotalEntries :: Term s (PValue 'Sorted 'Positive :--> PInteger)
 pvalTotalEntries = phoistAcyclic $ plam $ \v -> List.pfoldl # f # 0 # pto (pto v)
-  where
-    f = plam $ \acc tokenMap' -> acc + (List.plength #$ pto (pfromData $ psndBuiltin # tokenMap'))
+ where
+  f = plam $ \acc tokenMap' -> acc + (List.plength #$ pto (pfromData $ psndBuiltin # tokenMap'))

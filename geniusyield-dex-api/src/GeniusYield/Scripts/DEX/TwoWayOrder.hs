@@ -1,76 +1,74 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module GeniusYield.Scripts.DEX.TwoWayOrder
-  ( -- * Validators
-    twoWayOrderMintValidator
-  , twoWayOrderSpendValidator
-  , twoWayOrderFillValidator
-  , twoWayOrderFillPublishValidator
-  , twoWayOrderCancelValidator
-  , twoWayOrderCancelPublishValidator
+module GeniusYield.Scripts.DEX.TwoWayOrder (
+  -- * Validators
+  twoWayOrderMintValidator,
+  twoWayOrderSpendValidator,
+  twoWayOrderFillValidator,
+  twoWayOrderFillPublishValidator,
+  twoWayOrderCancelValidator,
+  twoWayOrderCancelPublishValidator,
 
-    -- * Datum
-  , BPgeniusyield_dex_v2_types_order_OrderDatum (..)
+  -- * Datum
+  BPgeniusyield_dex_v2_types_order_OrderDatum (..),
 
-    -- * Redeemer
-  , BPgeniusyield_dex_v2_types_order_OrderRedeemer (..)
+  -- * Redeemer
+  BPgeniusyield_dex_v2_types_order_OrderRedeemer (..),
 
-    -- * Generated types & functions
-  , BPAssetName
-  , BPByteArray
-  , BPData
-  , BPInt
-  , BPMintRedeemer (..)
-  , BPPolicyId
-  , BPcardano_address_Credential (..)
-  , BPScriptHash
-  , BPVerificationKeyHash
-  , BPgeniusyield_dex_v2_types_multisig_MultisigScript (..)
-  , BPcardano_address_Address (..)
-  , BPgeniusyield_dex_v2_types_order_AssetDetails (..)
-  , BPgeniusyield_dex_v2_types_order_Price (..)
-  , BPOption_Int (..)
-  , BPgeniusyield_dex_v2_types_rational_Rational (..)
-  , BPcardano_transaction_OutputReference (..)
-  , BPgeniusyield_dex_v2_types_assets_AssetClass (..)
-  , BPgeniusyield_dex_v2_types_order_OutputReferenceInt (..)
-  , BPPaymentCredential (..)
-  , BPOption_StakeCredential (..)
-  , BPList_VerificationKeyHash
-  , BPList_ScriptHash
-  , BPOption_geniusyield_dex_v2_types_rational_Rational (..)
-  , BPVerificationKey
-  , BPgeniusyield_dex_v2_types_order_PriceDelta (..)
-  , BPOption_geniusyield_dex_v2_types_order_PriceDelta (..)
-  , BPSignature
-  , BPgeniusyield_dex_v2_types_order_PriceTimestamp (..)
-  , BPStakeCredential (..)
-  , applyParamsToBPValidator_order_order_validator_stake_fill_withdraw
-  , applyParamsToBPValidator_order_order_validator_stake_fill_else
-  , applyParamsToBPValidator_order_order_validator_stake_cancel_withdraw
-  , applyParamsToBPValidator_order_order_validator_stake_cancel_else
-  , applyParamsToBPValidator_order_order_validator_spend_spend
-  , applyParamsToBPValidator_order_order_validator_spend_else
-  , applyParamsToBPValidator_order_order_validator_mint_mint
-  , applyParamsToBPValidator_order_order_validator_mint_else
-  , scriptFromBPSerialisedScript
-  )
-where
+  -- * Generated types & functions
+  BPAssetName,
+  BPByteArray,
+  BPData,
+  BPInt,
+  BPMintRedeemer (..),
+  BPPolicyId,
+  BPcardano_address_Credential (..),
+  BPScriptHash,
+  BPVerificationKeyHash,
+  BPgeniusyield_dex_v2_types_multisig_MultisigScript (..),
+  BPcardano_address_Address (..),
+  BPgeniusyield_dex_v2_types_order_AssetDetails (..),
+  BPgeniusyield_dex_v2_types_order_Price (..),
+  BPOption_Int (..),
+  BPgeniusyield_dex_v2_types_rational_Rational (..),
+  BPcardano_transaction_OutputReference (..),
+  BPgeniusyield_dex_v2_types_assets_AssetClass (..),
+  BPgeniusyield_dex_v2_types_order_OutputReferenceInt (..),
+  BPPaymentCredential (..),
+  BPOption_StakeCredential (..),
+  BPList_VerificationKeyHash,
+  BPList_ScriptHash,
+  BPOption_geniusyield_dex_v2_types_rational_Rational (..),
+  BPVerificationKey,
+  BPgeniusyield_dex_v2_types_order_PriceDelta (..),
+  BPOption_geniusyield_dex_v2_types_order_PriceDelta (..),
+  BPSignature,
+  BPgeniusyield_dex_v2_types_order_PriceTimestamp (..),
+  BPStakeCredential (..),
+  applyParamsToBPValidator_order_order_validator_stake_fill_withdraw,
+  applyParamsToBPValidator_order_order_validator_stake_fill_else,
+  applyParamsToBPValidator_order_order_validator_stake_cancel_withdraw,
+  applyParamsToBPValidator_order_order_validator_stake_cancel_else,
+  applyParamsToBPValidator_order_order_validator_spend_spend,
+  applyParamsToBPValidator_order_order_validator_spend_else,
+  applyParamsToBPValidator_order_order_validator_mint_mint,
+  applyParamsToBPValidator_order_order_validator_mint_else,
+  scriptFromBPSerialisedScript,
+) where
 
-import GeniusYield.Types
-  ( GYAssetClass (..)
-  , GYScript
-  , PlutusVersion (..)
-  , mintingPolicyIdToCurrencySymbol
-  , scriptPlutusHash
-  , tokenNameToPlutus
-  )
+import GeniusYield.Scripts.BlueprintTH (makeBPTypes, uponBPTypes)
+import GeniusYield.Types (
+  GYAssetClass (..),
+  GYScript,
+  PlutusVersion (..),
+  mintingPolicyIdToCurrencySymbol,
+  scriptPlutusHash,
+  tokenNameToPlutus,
+ )
 import PlutusLedgerApi.V1.Scripts (ScriptHash (..))
 import PlutusLedgerApi.V1.Value (CurrencySymbol (..), TokenName (unTokenName))
 import PlutusTx.Builtins.Internal (BuiltinByteString (..))
-
-import GeniusYield.Scripts.BlueprintTH (makeBPTypes, uponBPTypes)
 
 $(makeBPTypes "geniusyield-onchain/compiled/DEX.TwoWayOrder.json")
 $(uponBPTypes "geniusyield-onchain/compiled/DEX.TwoWayOrder.json")
@@ -81,15 +79,15 @@ $(uponBPTypes "geniusyield-onchain/compiled/DEX.TwoWayOrder.json")
 
 twoWayOrderMintValidator :: GYAssetClass -> GYScript PlutusV3
 twoWayOrderMintValidator refNft =
-  scriptFromBPSerialisedScript
-    $ applyParamsToBPValidator_order_order_validator_mint_mint
+  scriptFromBPSerialisedScript $
+    applyParamsToBPValidator_order_order_validator_mint_mint
       (bpAssetClass refNft)
       (bpScriptHash $ twoWayOrderSpendValidator refNft)
 
 twoWayOrderSpendValidator :: GYAssetClass -> GYScript PlutusV3
 twoWayOrderSpendValidator refNft =
-  scriptFromBPSerialisedScript
-    $ applyParamsToBPValidator_order_order_validator_spend_spend
+  scriptFromBPSerialisedScript $
+    applyParamsToBPValidator_order_order_validator_spend_spend
       (fillCredential refNft)
       (cancelCredential refNft)
 
@@ -112,10 +110,10 @@ twoWayOrderCancelPublishValidator =
 bpAssetClass :: GYAssetClass -> BPgeniusyield_dex_v2_types_assets_AssetClass
 bpAssetClass GYLovelace = BPgeniusyield_dex_v2_types_assets_AssetClass0AssetClass "" ""
 bpAssetClass (GYToken pid tn) = BPgeniusyield_dex_v2_types_assets_AssetClass0AssetClass pid' tn'
-  where
-    pid', tn' :: BuiltinByteString
-    pid' = unCurrencySymbol $ mintingPolicyIdToCurrencySymbol pid
-    tn' = unTokenName $ tokenNameToPlutus tn
+ where
+  pid', tn' :: BuiltinByteString
+  pid' = unCurrencySymbol $ mintingPolicyIdToCurrencySymbol pid
+  tn' = unTokenName $ tokenNameToPlutus tn
 
 bpScriptHash :: GYScript v -> BPScriptHash
 bpScriptHash = getScriptHash . scriptPlutusHash

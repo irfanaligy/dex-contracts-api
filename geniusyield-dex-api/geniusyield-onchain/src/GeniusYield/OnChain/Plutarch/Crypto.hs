@@ -13,22 +13,20 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module GeniusYield.OnChain.Plutarch.Crypto
-  ( PPubKey
-  , PSignature
-  , PSignedMessage
-  , pverifySignedMessage
-  )
-where
+module GeniusYield.OnChain.Plutarch.Crypto (
+  PPubKey,
+  PSignature,
+  PSignedMessage,
+  pverifySignedMessage,
+) where
 
+import GeniusYield.OnChain.Plutarch.Api (pguardC, pmatchC)
+import GeniusYield.OnChain.Plutarch.Utils (pparseDatum)
 import Plutarch.Api.V1
 import Plutarch.Api.V2 qualified as PV2
 import Plutarch.Crypto
 import Plutarch.DataRepr
 import Plutarch.Prelude
-
-import GeniusYield.OnChain.Plutarch.Api (pguardC, pmatchC)
-import GeniusYield.OnChain.Plutarch.Utils (pparseDatum)
 
 type PSignature :: PType
 type PSignature = PByteString
@@ -41,12 +39,12 @@ newtype PSignedMessage (a :: PType) (s :: S)
       ( Term
           s
           ( PDataRecord
-              '[ "signature" ':= PSignature
-               , "messageHash" ':= PDatumHash
+              '[ "signature" ':= PSignature,
+                 "messageHash" ':= PDatumHash
                ]
           )
       )
-  deriving stock Generic
+  deriving stock (Generic)
   deriving anyclass (PDataFields, PEq, PIsData, PlutusType)
 
 instance DerivePlutusType (PSignedMessage a) where type DPTStrat _ = PlutusTypeData

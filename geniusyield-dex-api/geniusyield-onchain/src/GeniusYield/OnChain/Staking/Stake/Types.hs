@@ -18,13 +18,13 @@ newtype PStakeDatum (s :: S)
       ( Term
           s
           ( PDataRecord
-              '[ "ownerKey" ':= PPubKeyHash
-               , "ownerAddr" ':= PAddress
-               , "lockedUntil" ':= PMaybeData PPOSIXTime
+              '[ "ownerKey" ':= PPubKeyHash,
+                 "ownerAddr" ':= PAddress,
+                 "lockedUntil" ':= PMaybeData PPOSIXTime
                ]
           )
       )
-  deriving stock Generic
+  deriving stock (Generic)
   deriving anyclass (PDataFields, PEq, PIsData, PlutusType)
 
 instance DerivePlutusType PStakeDatum where type DPTStrat _ = PlutusTypeData

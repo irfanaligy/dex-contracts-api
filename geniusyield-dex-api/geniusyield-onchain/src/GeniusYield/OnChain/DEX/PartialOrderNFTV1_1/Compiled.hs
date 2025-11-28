@@ -1,13 +1,17 @@
-module GeniusYield.OnChain.DEX.PartialOrderNFTV1_1.Compiled
-  ( originalPartialOrderNftV1_1Policy
-  , optimizedPartialOrderNftV1_1Policy
-  , optimizedPartialOrderNftV1_1PolicyWithTracing
-  )
-where
+module GeniusYield.OnChain.DEX.PartialOrderNFTV1_1.Compiled (
+  originalPartialOrderNftV1_1Policy,
+  optimizedPartialOrderNftV1_1Policy,
+  optimizedPartialOrderNftV1_1PolicyWithTracing,
+) where
 
 import Data.Default (def)
 import Data.Text (Text)
 import GeniusYield.OnChain.Core.Common.Crypto (ScriptHash)
+import GeniusYield.OnChain.DEX.PartialOrderNFTV1_1 (mkPartialOrderNFTV1_1Policy)
+import GeniusYield.OnChain.Plutarch.Types (PAssetClass)
+import GeniusYield.OnChain.TokenSale.SalePhaseToken (PAddress)
+import GeniusYield.OnChain.Utils (desiredTracingMode)
+import GeniusYield.Plutonomy ()
 import Plutarch (Config (tracingMode))
 import Plutarch.Api.V1.Scripts (PScriptHash)
 import Plutarch.Api.V2 qualified as PV2
@@ -18,12 +22,6 @@ import PlutusLedgerApi.V1 (Address)
 import PlutusLedgerApi.V1.Value (AssetClass)
 import Ply (ScriptRole (MintingPolicyRole), TypedScript)
 import Ply.Plutarch (toTypedScript)
-
-import GeniusYield.OnChain.DEX.PartialOrderNFTV1_1 (mkPartialOrderNFTV1_1Policy)
-import GeniusYield.OnChain.Plutarch.Types (PAssetClass)
-import GeniusYield.OnChain.TokenSale.SalePhaseToken (PAddress)
-import GeniusYield.OnChain.Utils (desiredTracingMode)
-import GeniusYield.Plutonomy ()
 
 originalPartialOrderNftV1_1Policy
   :: Config
@@ -38,8 +36,8 @@ optimizedPartialOrderNftV1_1PolicyWithTracing = Plutonomy.optimizeUPLC <$> origi
 
 mkPartialOrderNFTV1_1Policy' :: ClosedTerm (PScriptHash :--> PAddress :--> PAssetClass :--> PV2.PMintingPolicy)
 mkPartialOrderNFTV1_1Policy' = plam $ \sh refInputAddr refInputToken redm ctx ->
-  popaque
-    $ mkPartialOrderNFTV1_1Policy
+  popaque $
+    mkPartialOrderNFTV1_1Policy
       # sh
       # refInputAddr
       # refInputToken

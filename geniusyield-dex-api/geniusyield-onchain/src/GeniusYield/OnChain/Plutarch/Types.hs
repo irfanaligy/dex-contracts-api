@@ -16,12 +16,12 @@ newtype PAssetClass (s :: S)
       ( Term
           s
           ( PDataRecord
-              '[ "currencySymbol" ':= PCurrencySymbol
-               , "tokenName" ':= PTokenName
+              '[ "currencySymbol" ':= PCurrencySymbol,
+                 "tokenName" ':= PTokenName
                ]
           )
       )
-  deriving stock Generic
+  deriving stock (Generic)
   deriving anyclass (PDataFields, PEq, PIsData, PTryFrom PData, PlutusType)
 
 instance DerivePlutusType PAssetClass where type DPTStrat _ = PlutusTypeData
@@ -31,6 +31,6 @@ instance PTryFrom PData (PAsData PAssetClass)
 type instance PlyArgOf PAssetClass = AssetClass
 
 newtype Flip f a b = Flip (f b a)
-  deriving stock Generic
+  deriving stock (Generic)
 
 type instance PlyArgOf PRationalData = PlutusTx.Rational

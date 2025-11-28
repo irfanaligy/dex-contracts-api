@@ -1,9 +1,8 @@
 {-# LANGUAGE CPP #-}
 
-module GeniusYield.OnChain.Core.Common.LedgerExports.Common
-  ( module LedgerCommon
-  )
-where
+module GeniusYield.OnChain.Core.Common.LedgerExports.Common (
+  module LedgerCommon,
+) where
 
 -- These types are shared in both V1 and V2.
 

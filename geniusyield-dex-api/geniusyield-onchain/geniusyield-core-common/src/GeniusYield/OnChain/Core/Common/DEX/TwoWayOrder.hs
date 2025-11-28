@@ -6,16 +6,15 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module GeniusYield.OnChain.Core.Common.DEX.TwoWayOrder
-  ( TwoWayOrderDatum (..)
-  , TwoWayOrderPrice (..)
-  , TwoWayOrderPriceDelta (..)
-  , TwoWayOrder (..)
-  , TwoWayOrderWays (..)
-  , TwoWayOrderAssetDetails (..)
-  , TwoWayOrderOffer (..)
-  )
-where
+module GeniusYield.OnChain.Core.Common.DEX.TwoWayOrder (
+  TwoWayOrderDatum (..),
+  TwoWayOrderPrice (..),
+  TwoWayOrderPriceDelta (..),
+  TwoWayOrder (..),
+  TwoWayOrderWays (..),
+  TwoWayOrderAssetDetails (..),
+  TwoWayOrderOffer (..),
+) where
 
 import Data.ByteString (ByteString)
 import GHC.Generics (type Generic)
@@ -31,16 +30,16 @@ import PlutusTx.Ratio qualified as Tx
 -- TODO: Add to Atlas
 
 data TwoWayOrderDatum = TwoWayOrderDatum
-  { twoiOwnerCredentials :: ![Credential]
-  , twoiOwnerAddr :: !Address
-  , twoiNFT :: !TokenName
-  , twoiOffer :: !(TwoWayOrderPrice TwoWayOrder)
-  , twoiStart :: !(Maybe POSIXTime)
-  , twoiEnd :: !(Maybe POSIXTime)
-  , twoiTakerLovelaceFlatFee :: !Integer
-  , twoiTakerFeeRatio :: !Tx.Rational
-  , twoiMakerFeeRatio :: !Tx.Rational
-  , twoiOracleFreshnessSeconds :: !Integer
+  { twoiOwnerCredentials :: ![Credential],
+    twoiOwnerAddr :: !Address,
+    twoiNFT :: !TokenName,
+    twoiOffer :: !(TwoWayOrderPrice TwoWayOrder),
+    twoiStart :: !(Maybe POSIXTime),
+    twoiEnd :: !(Maybe POSIXTime),
+    twoiTakerLovelaceFlatFee :: !Integer,
+    twoiTakerFeeRatio :: !Tx.Rational,
+    twoiMakerFeeRatio :: !Tx.Rational,
+    twoiOracleFreshnessSeconds :: !Integer
   }
   deriving stock (Generic, Show)
 
@@ -57,9 +56,9 @@ data TwoWayOrderPrice of'
   = TwoWayOrderPriceFixed !(of' Tx.Rational)
   | -- | Price given as a delta to oracle price.
     TwoWayOrderDynamic
-      { twoPriceDelta :: !(of' TwoWayOrderPriceDelta)
-      , twoOracleKey :: !ByteString
-      , twoToFlip :: !Bool
+      { twoPriceDelta :: !(of' TwoWayOrderPriceDelta),
+        twoOracleKey :: !ByteString,
+        twoToFlip :: !Bool
       }
 
 deriving stock instance
@@ -75,8 +74,8 @@ deriving stock instance
   => Generic (TwoWayOrderPrice of')
 
 data TwoWayOrderPriceDelta = TwoWayOrderPriceDelta
-  { twoOffset :: !Tx.Rational
-  , twoSpread :: !Tx.Rational
+  { twoOffset :: !Tx.Rational,
+    twoSpread :: !Tx.Rational
   }
   deriving stock (Eq, Generic, Show)
 
@@ -94,8 +93,8 @@ deriving newtype instance Generic p => Generic (TwoWayOrder p)
 -- deriving newtype instance (Aeson.ToJSON p, Generic p) => Aeson.ToJSON (TwoWayOrder p)
 
 data TwoWayOrderWays offer = TwoWayOrderWays
-  { twoStraight :: !(TwoWayOrderAssetDetails offer)
-  , twoReverse :: !(TwoWayOrderAssetDetails (Maybe offer))
+  { twoStraight :: !(TwoWayOrderAssetDetails offer),
+    twoReverse :: !(TwoWayOrderAssetDetails (Maybe offer))
   }
 
 deriving stock instance Show o => Show (TwoWayOrderWays o)
@@ -110,10 +109,10 @@ deriving stock instance Generic o => Generic (TwoWayOrderWays o)
 --   => Aeson.ToJSON (TwoWayOrderWays o)
 
 data TwoWayOrderAssetDetails offer = TwoWayOrderAssetDetails
-  { twoAsset :: !AssetClass
-  -- ^ Asset class.
-  , twoOffer :: !offer
-  -- ^ Available offer for this asset.
+  { -- | Asset class.
+    twoAsset :: !AssetClass,
+    -- | Available offer for this asset.
+    twoOffer :: !offer
   }
 
 deriving stock instance Show p => Show (TwoWayOrderAssetDetails p)
@@ -128,8 +127,8 @@ deriving stock instance Generic p => Generic (TwoWayOrderAssetDetails p)
 --   => Aeson.ToJSON (TwoWayOrderAssetDetails p)
 
 data TwoWayOrderOffer price = TwoWayOrderOffer
-  { twoAmount :: !Integer
-  , twoPrice :: !price
+  { twoAmount :: !Integer,
+    twoPrice :: !price
   }
 
 deriving stock instance Show p => Show (TwoWayOrderOffer p)

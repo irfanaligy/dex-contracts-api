@@ -7,25 +7,25 @@
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -Wno-unused-local-binds #-}
 
-module GeniusYield.OnChain.Plutarch.Tx
-  ( pownUtxo
-  , putxoConsumed
-  , ptxSignedBy
-  , phasSignatures
-  , pfindTxOutByTxOutRef
-  , toDatum
-  , pownSymbol
-  , pexpectedTokenName
-  , ppaidValue
-  , ppaidValuePlusInline
-  , ppaidValueSum
-  , pmintedTokens
-  , pdecodeInlineDatum
-  , presolveInlineDatum
-  , presolveDatum
-  )
-where
+module GeniusYield.OnChain.Plutarch.Tx (
+  pownUtxo,
+  putxoConsumed,
+  ptxSignedBy,
+  phasSignatures,
+  pfindTxOutByTxOutRef,
+  toDatum,
+  pownSymbol,
+  pexpectedTokenName,
+  ppaidValue,
+  ppaidValuePlusInline,
+  ppaidValueSum,
+  pmintedTokens,
+  pdecodeInlineDatum,
+  presolveInlineDatum,
+  presolveDatum,
+) where
 
+import GeniusYield.OnChain.Plutarch.Utils (pelem', pfromMaybe, ptryFromData)
 import Plutarch.Api.V1
 import Plutarch.Api.V1.AssocMap qualified as PMap
 import Plutarch.Api.V2 (POutputDatum (POutputDatumHash))
@@ -33,8 +33,6 @@ import Plutarch.Api.V2 qualified as PV2
 import Plutarch.Builtin (pforgetData)
 import Plutarch.Extra.TermCont (pletC, pletFieldsC, pmatchC)
 import Plutarch.Prelude
-
-import GeniusYield.OnChain.Plutarch.Utils (pelem', pfromMaybe, ptryFromData)
 
 {- $setup
 
@@ -118,23 +116,23 @@ phasSignatures
            :--> PBool
        )
 phasSignatures =
-  phoistAcyclic
-    $ plam
-    $ \txSignatories authorizedSignatores reqSigs ->
-      precList
-        ( \self x xs -> plam $ \remAuthSignatories sigs ->
-            pif
-              (reqSigs #<= sigs)
-              (pcon PTrue)
-              ( pmatch (pelem' # x # remAuthSignatories) $ \case
-                  PNothing -> self # xs # remAuthSignatories # sigs
-                  PJust remAuthSignatories' -> self # xs # remAuthSignatories' # (sigs + 1)
-              )
-        )
-        (\_self -> plam $ \_remReqUniqueSignatories sigs -> reqSigs #<= sigs)
-        # txSignatories
-        # authorizedSignatores
-        # 0
+  phoistAcyclic $
+    plam $
+      \txSignatories authorizedSignatores reqSigs ->
+        precList
+          ( \self x xs -> plam $ \remAuthSignatories sigs ->
+              pif
+                (reqSigs #<= sigs)
+                (pcon PTrue)
+                ( pmatch (pelem' # x # remAuthSignatories) $ \case
+                    PNothing -> self # xs # remAuthSignatories # sigs
+                    PJust remAuthSignatories' -> self # xs # remAuthSignatories' # (sigs + 1)
+                )
+          )
+          (\_self -> plam $ \_remReqUniqueSignatories sigs -> reqSigs #<= sigs)
+          # txSignatories
+          # authorizedSignatores
+          # 0
 
 -- | 'toDatum' Converts any 'PType' that has instance of 'PIsData' to 'PDatum'.
 toDatum :: forall a s. PIsData a => Term s a -> Term s PDatum
@@ -176,12 +174,12 @@ pexpectedTokenName
        )
 pexpectedTokenName = phoistAcyclic $ plam $ \txOutRef ->
   pletFields @["idx", "id"] txOutRef $ \v ->
-    pcon
-      $ PTokenName
-      $ psha2_256
-        #$ pconsBS
-        # getField @"idx" v
-        # (pfield @"_0" #$ getField @"id" v)
+    pcon $
+      PTokenName $
+        psha2_256
+          #$ pconsBS
+          # getField @"idx" v
+          # (pfield @"_0" #$ getField @"id" v)
 
 {- | 'ppaidValue' returns the first 'PValue' paid to a particular 'PAddress' in a given 'PTxInfo' output list,
       This done by checking if the given `PAddress` and hash of given datum
@@ -273,14 +271,14 @@ ppaidValueCore
        )
 ppaidValueCore go = plam $ \ref addr datums -> unTermCont $ do
   expectedPaymentDatumHash <-
-    pletC
-      $ pdcons
+    pletC $
+      pdcons
         # ( precList
               ( \self x' xs -> unTermCont $ do
                   dh <- pletC $ pfstBuiltin # x'
                   d <- pletC $ psndBuiltin # x'
-                  pure
-                    $ pif
+                  pure $
+                    pif
                       (d #== pdata (toDatum ref))
                       dh
                       (self # xs)
@@ -293,8 +291,8 @@ ppaidValueCore go = plam $ \ref addr datums -> unTermCont $ do
   let f = plam $ \o' -> unTermCont $ do
         o <- pletFieldsC @["datum", "address"] o'
         outDatum <- pletC $ getField @"datum" o
-        pure
-          $ outDatum
+        pure $
+          outDatum
             #== pcon (POutputDatumHash expectedPaymentDatumHash)
             #&& getField @"address" o
             #== addr
@@ -350,22 +348,22 @@ pdecodeInlineDatum
   :: forall a s
    . (PIsData a, PTryFrom PData (PAsData a))
   => Term s (PV2.POutputDatum :--> a)
-pdecodeInlineDatum = phoistAcyclic
-  $ plam
-  $ \od ->
-    pmatch od $ \case
-      PV2.POutputDatum datum ->
-        plet (pfield @"outputDatum" # datum) $ \datumResolved ->
-          (pfromData . ptryFromData @a . pto . pfromData) datumResolved
-      _ -> ptraceError "expected inline datum"
+pdecodeInlineDatum = phoistAcyclic $
+  plam $
+    \od ->
+      pmatch od $ \case
+        PV2.POutputDatum datum ->
+          plet (pfield @"outputDatum" # datum) $ \datumResolved ->
+            (pfromData . ptryFromData @a . pto . pfromData) datumResolved
+        _ -> ptraceError "expected inline datum"
 
 presolveInlineDatum :: Term s (PV2.POutputDatum :--> PDatum)
-presolveInlineDatum = phoistAcyclic
-  $ plam
-  $ \od ->
-    pmatch od $ \case
-      PV2.POutputDatum datum -> (pfield @"outputDatum" # datum)
-      _ -> ptraceError "expected inline datum"
+presolveInlineDatum = phoistAcyclic $
+  plam $
+    \od ->
+      pmatch od $ \case
+        PV2.POutputDatum datum -> (pfield @"outputDatum" # datum)
+        _ -> ptraceError "expected inline datum"
 
 -- | If the datum of output is inlined, we return it else if it contains hash, we try to find the corresponding datum from witness.
 presolveDatum
@@ -376,13 +374,13 @@ presolveDatum
            :--> PDatum
        )
 presolveDatum =
-  phoistAcyclic
-    $ plam
-    $ \outDatum' datums ->
-      pmatch outDatum' $ \case
-        PV2.PNoOutputDatum _ -> ptraceError "presolveDatum: Expected datum in this output"
-        PV2.POutputDatum x -> pfield @"outputDatum" # x
-        PV2.POutputDatumHash x ->
-          pmatch (PMap.plookup # (pfield @"datumHash" # x) # datums) $ \case
-            PNothing -> ptraceError "presolveDatum: Datum not found in witness map corresponding to datum hash present in this output"
-            PJust outDatum -> outDatum
+  phoistAcyclic $
+    plam $
+      \outDatum' datums ->
+        pmatch outDatum' $ \case
+          PV2.PNoOutputDatum _ -> ptraceError "presolveDatum: Expected datum in this output"
+          PV2.POutputDatum x -> pfield @"outputDatum" # x
+          PV2.POutputDatumHash x ->
+            pmatch (PMap.plookup # (pfield @"datumHash" # x) # datums) $ \case
+              PNothing -> ptraceError "presolveDatum: Datum not found in witness map corresponding to datum hash present in this output"
+              PJust outDatum -> outDatum

@@ -1,57 +1,57 @@
-module GeniusYield.Api.DEX.TwoWayOrderConfig
-  ( TWORef (..)
-  , RefTWOCD (..)
-  , TWOSkeleton (..)
+module GeniusYield.Api.DEX.TwoWayOrderConfig (
+  TWORef (..),
+  RefTWOCD (..),
+  TWOSkeleton (..),
   -- , deployTwoWayOrderConfig
   -- , deployTwoWayOrderConfigPlan
-  , fetchTwoWayOrderConfig
-  , updateTwoWayOrderConfig
-  , twoWayOrderConfigAddr
-  )
-where
+  fetchTwoWayOrderConfig,
+  updateTwoWayOrderConfig,
+  twoWayOrderConfigAddr,
+) where
 
 import Control.Monad.Reader (ask)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Strict.Tuple (Pair (..))
 import Data.Text qualified as Txt
-import GeniusYield.HTTP.Errors (GYApiError (..), IsGYApiError (..))
-import GeniusYield.Imports
-import GeniusYield.TxBuilder
-  ( GYTxQueryMonad (utxosAtAddressWithDatums)
-  , GYTxSkeleton
-  , addressFromPlutus'
-  , mustBeSignedBy
-  -- , mustHaveCertificate
-  , mustHaveInput
-  , mustHaveOutput
-  -- , mustHaveRefInput
-  -- , mustMint
-  , scriptAddress
-  , throwAppError
-  , utxoDatumPure'
-  )
-import GeniusYield.Types
-import Network.HTTP.Types (status400)
+-- , mustHaveCertificate
+
+-- , mustHaveRefInput
+-- , mustMint
 
 -- import GeniusYield.Api.DEX.Utils (NftInfo (..), nftInfo)
 -- import GeniusYield.Api.OneWay (deployScript)
 import GeniusYield.Api.Types
+import GeniusYield.HTTP.Errors (GYApiError (..), IsGYApiError (..))
+import GeniusYield.Imports
 import GeniusYield.Scripts (GYCompiledScripts (..))
 -- import GeniusYield.Scripts.DEX.TwoWayOrder
 import GeniusYield.Scripts.DEX.TwoWayOrderConfig
+import GeniusYield.TxBuilder (
+  GYTxQueryMonad (utxosAtAddressWithDatums),
+  GYTxSkeleton,
+  addressFromPlutus',
+  mustBeSignedBy,
+  mustHaveInput,
+  mustHaveOutput,
+  scriptAddress,
+  throwAppError,
+  utxoDatumPure',
+ )
+import GeniusYield.Types
+import Network.HTTP.Types (status400)
 
 newtype TwocdException = TwocdException GYAssetClass
-  deriving stock Show
-  deriving anyclass Exception
+  deriving stock (Show)
+  deriving anyclass (Exception)
 
 instance IsGYApiError TwocdException where
   toApiError (TwocdException nftToken) =
     GYApiError
-      { gaeErrorCode = "TWO_WAY_ORDER_CONFIG_NOT_FOUND"
-      , gaeHttpStatus = status400
-      , gaeMsg =
-          Txt.pack
-            $ printf "Two-way order config not found for NFT: %s" nftToken
+      { gaeErrorCode = "TWO_WAY_ORDER_CONFIG_NOT_FOUND",
+        gaeHttpStatus = status400,
+        gaeMsg =
+          Txt.pack $
+            printf "Two-way order config not found for NFT: %s" nftToken
       }
 
 twoWayOrderConfigAddr :: GYApiQueryMonad m => GYAssetClass -> m GYAddress
@@ -221,18 +221,17 @@ deployTwoWayOrderConfigPlan sigs req feeAddr makerFeeFlat makerFeeRatio takerFee
         )
   pure (refNft, mintTx, refsTxs, derive)
 -}
-
 data TWORef = TWORef
-  { tworRefNft :: !GYAssetClass
-  -- ^ The reference NFT.
-  , tworMintRef :: !GYTxOutRef
-  -- ^ The location of the reference NFT minting policy reference script.
-  , tworSpendRef :: !GYTxOutRef
-  -- ^ The location of the validator reference script.
-  , tworFillRef :: !GYTxOutRef
-  -- ^ Reference script UTxO for the fill stake validator.
-  , tworCancelRef :: !GYTxOutRef
-  -- ^ Reference script UTxO for the cancel stake validator.
+  { -- | The reference NFT.
+    tworRefNft :: !GYAssetClass,
+    -- | The location of the reference NFT minting policy reference script.
+    tworMintRef :: !GYTxOutRef,
+    -- | The location of the validator reference script.
+    tworSpendRef :: !GYTxOutRef,
+    -- | Reference script UTxO for the fill stake validator.
+    tworFillRef :: !GYTxOutRef,
+    -- | Reference script UTxO for the cancel stake validator.
+    tworCancelRef :: !GYTxOutRef
   }
   deriving stock (Generic, Show)
   deriving anyclass (FromJSON, ToJSON)
@@ -296,21 +295,21 @@ updateTwoWayOrderConfig
       validator = dexTwoWayOrderConfigValidator gycs nftToken
       datum =
         twocd
-          { twocdSignatories = signatories
-          , twocdReqSignatories = max 1 $ toInteger reqSignatories
-          , twocdFeeAddr = feeAddr
-          , twocdMakerFeeFlat = toInteger makerFeeFlat
-          , twocdMakerFeeRatio = max 0 makerFeeRatio -- ???: why do we check it off-chain
-          , twocdTakerFeeFlat = toInteger takerFeeFlat
-          , twocdTakerFeeRatio = max 0 takerFeeRatio -- ???: why do we check it off-chain
-          , twocdOracleFreshnessSeconds = toInteger oracleFreshnessSeconds
-          , twocdMinDeposit = toInteger minDeposit
+          { twocdSignatories = signatories,
+            twocdReqSignatories = max 1 $ toInteger reqSignatories,
+            twocdFeeAddr = feeAddr,
+            twocdMakerFeeFlat = toInteger makerFeeFlat,
+            twocdMakerFeeRatio = max 0 makerFeeRatio, -- ???: why do we check it off-chain
+            twocdTakerFeeFlat = toInteger takerFeeFlat,
+            twocdTakerFeeRatio = max 0 takerFeeRatio, -- ???: why do we check it off-chain
+            twocdOracleFreshnessSeconds = toInteger oracleFreshnessSeconds,
+            twocdMinDeposit = toInteger minDeposit
           }
-    pure
-      $ mustHaveInput
+    pure $
+      mustHaveInput
         GYTxIn
-          { gyTxInTxOutRef = ref
-          , gyTxInWitness =
+          { gyTxInTxOutRef = ref,
+            gyTxInWitness =
               GYTxInWitnessScript
                 (GYInScript validator)
                 Nothing
@@ -318,16 +317,16 @@ updateTwoWayOrderConfig
           }
         <> mustHaveOutput
           GYTxOut
-            { gyTxOutAddress = addr
-            , gyTxOutValue = valueSingleton nftToken 1
-            , gyTxOutDatum = Just (datumFromPlutusData datum, GYTxOutUseInlineDatum)
-            , gyTxOutRefS = Nothing
+            { gyTxOutAddress = addr,
+              gyTxOutValue = valueSingleton nftToken 1,
+              gyTxOutDatum = Just (datumFromPlutusData datum, GYTxOutUseInlineDatum),
+              gyTxOutRefS = Nothing
             }
         <> mconcat (mustBeSignedBy <$> expSignatures)
         <> mustHaveOutput
           GYTxOut
-            { gyTxOutAddress = feeAddr
-            , gyTxOutValue = mempty
-            , gyTxOutDatum = Nothing
-            , gyTxOutRefS = Nothing
+            { gyTxOutAddress = feeAddr,
+              gyTxOutValue = mempty,
+              gyTxOutDatum = Nothing,
+              gyTxOutRefS = Nothing
             }

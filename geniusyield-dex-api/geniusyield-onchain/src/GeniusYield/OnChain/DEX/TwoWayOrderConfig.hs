@@ -8,76 +8,74 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module GeniusYield.OnChain.DEX.TwoWayOrderConfig
-  ( mkTwoWayOrderConfigValidator
-  )
-where
+module GeniusYield.OnChain.DEX.TwoWayOrderConfig (
+  mkTwoWayOrderConfigValidator,
+) where
 
+import GeniusYield.OnChain.Plutarch.Api (
+  PAssetClass,
+  pguardC,
+  pguardC',
+  phasSignatures,
+  pletC,
+  pletFieldsC,
+  pmatchC,
+ )
+import GeniusYield.OnChain.Plutarch.Utils (
+  pallUnique,
+  pfindOwnInput,
+  pgetContinuingOutputUsingNft,
+  pparseDatum',
+ )
+import GeniusYield.OnChain.Plutarch.Value (passetClassValueOf, pvalTotalEntries)
 import Plutarch (Term, pcon, plam, unTermCont, (#), type (:-->))
 import Plutarch.Api.V1 (PAddress, PCurrencySymbol, PPubKeyHash, PScriptPurpose (PSpending))
 import Plutarch.Api.V2 qualified as PV2
 import Plutarch.DataRepr (PDataFields, pfield)
 import Plutarch.Extra.RationalData
 import Plutarch.List (pfind)
-import Plutarch.Prelude
-  ( DerivePlutusType (..)
-  , Generic
-  , PAsData
-  , PBool (..)
-  , PBuiltinList
-  , PData
-  , PDataRecord
-  , PEq ((#==))
-  , PInteger
-  , PIsData
-  , PLabeledType ((:=))
-  , PMaybe (..)
-  , PPartialOrd ((#<=))
-  , PTryFrom
-  , PUnit (..)
-  , PlutusType
-  , PlutusTypeData
-  , getField
-  , pfromData
-  , plength
-  , pmatch
-  )
-
-import GeniusYield.OnChain.Plutarch.Api
-  ( PAssetClass
-  , pguardC
-  , pguardC'
-  , phasSignatures
-  , pletC
-  , pletFieldsC
-  , pmatchC
-  )
-import GeniusYield.OnChain.Plutarch.Utils
-  ( pallUnique
-  , pfindOwnInput
-  , pgetContinuingOutputUsingNft
-  , pparseDatum'
-  )
-import GeniusYield.OnChain.Plutarch.Value (passetClassValueOf, pvalTotalEntries)
+import Plutarch.Prelude (
+  DerivePlutusType (..),
+  Generic,
+  PAsData,
+  PBool (..),
+  PBuiltinList,
+  PData,
+  PDataRecord,
+  PEq ((#==)),
+  PInteger,
+  PIsData,
+  PLabeledType ((:=)),
+  PMaybe (..),
+  PPartialOrd ((#<=)),
+  PTryFrom,
+  PUnit (..),
+  PlutusType,
+  PlutusTypeData,
+  getField,
+  pfromData,
+  plength,
+  pmatch,
+ )
 
 type TwoWayOrderConfigRec =
-  '[ "twocdSignatories" ':= PBuiltinList (PAsData PPubKeyHash)
-   , "twocdReqSignatories" ':= PInteger
-   , "twocdNftSymbol" ':= PCurrencySymbol
-   , "twocdFillHash" ':= PV2.PScriptHash
-   , "twocdCancelHash" ':= PV2.PScriptHash
-   , "twocdFeeAddr" ':= PAddress
-   , "twocdMakerFeeFlat" ':= PInteger
-   , "twocdMakerFeeRatio" ':= PRationalData
-   , "twocdTakerFeeFlat" ':= PInteger
-   , "twocdTakerFeeRatio" ':= PRationalData
-   , "twocdOracleFreshnessSeconds" ':= PInteger
-   , "twocdMinDeposit" ':= PInteger
+  '[ "twocdSignatories" ':= PBuiltinList (PAsData PPubKeyHash),
+     "twocdReqSignatories" ':= PInteger,
+     "twocdNftSymbol" ':= PCurrencySymbol,
+     "twocdFillHash" ':= PV2.PScriptHash,
+     "twocdCancelHash" ':= PV2.PScriptHash,
+     "twocdFeeAddr" ':= PAddress,
+     "twocdMakerFeeFlat" ':= PInteger,
+     "twocdMakerFeeRatio" ':= PRationalData,
+     "twocdTakerFeeFlat" ':= PInteger,
+     "twocdTakerFeeRatio" ':= PRationalData,
+     "twocdOracleFreshnessSeconds" ':= PInteger,
+     "twocdMinDeposit" ':= PInteger
    ]
 
 newtype PTwoWayOrderConfigDatum s
   = PTwoWayOrderConfigDatum (Term s (PDataRecord TwoWayOrderConfigRec))
-  deriving stock Generic
+  deriving stock (Generic)
   deriving anyclass (PDataFields, PEq, PIsData, PlutusType)
 
 instance DerivePlutusType PTwoWayOrderConfigDatum where type DPTStrat _ = PlutusTypeData
@@ -99,10 +97,10 @@ mkTwoWayOrderConfigValidator =
     ctxFs <- pletFieldsC @["txInfo", "purpose"] ctx
     info <-
       pletFieldsC
-        @[ "inputs"
-         , "outputs"
-         , "signatories"
-         , "datums"
+        @[ "inputs",
+           "outputs",
+           "signatories",
+           "datums"
          ]
         $ getField @"txInfo" ctxFs
 
@@ -119,9 +117,9 @@ mkTwoWayOrderConfigValidator =
 
     dFs <-
       pletFieldsC
-        @[ "twocdSignatories"
-         , "twocdReqSignatories"
-         , "twocdNftSymbol"
+        @[ "twocdSignatories",
+           "twocdReqSignatories",
+           "twocdNftSymbol"
          ]
         d
     -- Assert multi-sig is correctly exercised.
@@ -137,18 +135,18 @@ mkTwoWayOrderConfigValidator =
     newDatum <- pletC $ pfromData $ pparseDatum' @PTwoWayOrderConfigDatum # getField @"datum" ownOutUtxoFs # getField @"datums" info
     newDatumFs <-
       pletFieldsC
-        @[ "twocdNftSymbol"
-         , "twocdMakerFeeFlat"
-         , "twocdMakerFeeRatio"
-         , "twocdTakerFeeFlat"
-         , "twocdTakerFeeRatio"
-         , "twocdOracleFreshnessSeconds"
-         , "twocdMinDeposit"
-         , "twocdReqSignatories"
-         , "twocdSignatories"
-         , "twocdFeeAddr"
-         , "twocdFillHash"
-         , "twocdCancelHash"
+        @[ "twocdNftSymbol",
+           "twocdMakerFeeFlat",
+           "twocdMakerFeeRatio",
+           "twocdTakerFeeFlat",
+           "twocdTakerFeeRatio",
+           "twocdOracleFreshnessSeconds",
+           "twocdMinDeposit",
+           "twocdReqSignatories",
+           "twocdSignatories",
+           "twocdFeeAddr",
+           "twocdFillHash",
+           "twocdCancelHash"
          ]
         newDatum
 
@@ -173,13 +171,12 @@ mkTwoWayOrderConfigValidator =
 
     -- Even though we have checked the format of fee address when parsing the datum, but to be sure of any edges, we assert that an output is made to this address as part of this transaction.
     newFeeAddr <- pletC $ getField @"twocdFeeAddr" newDatumFs
-    pguardC "not paid to fee address"
-      $
+    pguardC "not paid to fee address" $
       -- We are iterating over list of outputs twice (traversed earlier when finding continuing output) but performance is not a concern here.
-      pmatch (pfind # plam (\output -> pfield @"address" # output #== newFeeAddr) # outputs)
-      $ \case
-        PNothing -> pcon PFalse
-        PJust _ -> pcon PTrue
+      pmatch (pfind # plam (\output -> pfield @"address" # output #== newFeeAddr) # outputs) $
+        \case
+          PNothing -> pcon PFalse
+          PJust _ -> pcon PTrue
 
     -- @twocdMakerFeeFlat@, @twocdTakerFee@ and @twocdMinDeposit@ are all non-negative and not more than 1000 ADA.
     let lovelaceThreshold = 1_000_000_000

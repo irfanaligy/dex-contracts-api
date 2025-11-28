@@ -1,20 +1,18 @@
 {-# LANGUAGE LambdaCase #-}
 
-module GeniusYield.Scripts.DEX.TwoWayOrder.Utils
-  ( mkTwoWayOrderFixedDatum
-  , mkTwoWayOrderFixedDatumTwoWay
-  , mkTwoWayOrderDeltaDatumOneWay
-  , mkTwoWayOrderDeltaDatumTwoWay
-  )
-where
+module GeniusYield.Scripts.DEX.TwoWayOrder.Utils (
+  mkTwoWayOrderFixedDatum,
+  mkTwoWayOrderFixedDatumTwoWay,
+  mkTwoWayOrderDeltaDatumOneWay,
+  mkTwoWayOrderDeltaDatumTwoWay,
+) where
 
+import GeniusYield.Scripts.DEX.TwoWayOrder
 import GeniusYield.Types
 import PlutusLedgerApi.V1 (Address (..), Credential (..), POSIXTime (..), PubKeyHash (..), ScriptHash (..), StakingCredential (..))
 import PlutusLedgerApi.V1.Value qualified as Ledger
 import PlutusTx.Builtins (toBuiltin)
 import PlutusTx.Ratio qualified as Tx
-
-import GeniusYield.Scripts.DEX.TwoWayOrder
 
 -- Internal core builder to avoid duplication between one-way and two-way fixed-price datums.
 mkTwoWayOrderFixedDatumCore
@@ -46,37 +44,37 @@ mkTwoWayOrderFixedDatumCore pkh ownerAddr nftName (aAC, aAmt) (bAC, bAmt) straig
     (rationalFromPlutus' $ rationalToPlutus takerRatio)
     (rationalFromPlutus' $ rationalToPlutus makerRatio)
     freshnessSeconds
-  where
-    ownerMultisig =
-      BPgeniusyield_dex_v2_types_multisig_MultisigScript0MultisigScript
-        [getPubKeyHash $ pubKeyHashToPlutus pkh]
-        []
-    bpStakeCred m = case m of
-      Nothing -> BPOption_StakeCredential1None
-      Just (StakingHash cr) -> BPOption_StakeCredential0Some $ BPStakeCredential0Inline (credentialToCardanoAddress cr)
-      Just (StakingPtr x y z) -> BPOption_StakeCredential0Some $ BPStakeCredential1Pointer x y z
-    bpPaymentAddr =
-      let Address cred mStak = addressToPlutus ownerAddr
-      in BPcardano_address_Address0Address (credentialToBPPayment cred) (bpStakeCred mStak)
-    bpAssetDetails ac amt =
-      let Ledger.AssetClass (Ledger.CurrencySymbol polic, Ledger.TokenName assetName) = assetClassToPlutus ac
-      in BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails
-           (BPgeniusyield_dex_v2_types_assets_AssetClass0AssetClass polic assetName)
-           amt
-    bpPrice = case mReverse of
-      Nothing -> BPgeniusyield_dex_v2_types_order_Price0Fixed (rationalFromPlutus' $ rationalToPlutus straight) BPOption_geniusyield_dex_v2_types_rational_Rational1None
-      Just r -> BPgeniusyield_dex_v2_types_order_Price0Fixed (rationalFromPlutus' $ rationalToPlutus straight) (BPOption_geniusyield_dex_v2_types_rational_Rational0Some $ rationalFromPlutus' $ rationalToPlutus r)
-    bpTime = maybe BPOption_Int1None (BPOption_Int0Some . getPOSIXTime . timeToPlutus)
-    rationalFromPlutus' :: Tx.Rational -> BPgeniusyield_dex_v2_types_rational_Rational
-    rationalFromPlutus' r = BPgeniusyield_dex_v2_types_rational_Rational0Rational (Tx.numerator r) (Tx.denominator r)
-    credentialToBPPayment :: Credential -> BPPaymentCredential
-    credentialToBPPayment = \case
-      PubKeyCredential (PubKeyHash vkh) -> BPPaymentCredential0VerificationKey vkh
-      ScriptCredential (ScriptHash sh) -> BPPaymentCredential1Script sh
-    credentialToCardanoAddress :: Credential -> BPcardano_address_Credential
-    credentialToCardanoAddress = \case
-      PubKeyCredential (PubKeyHash vkh) -> BPcardano_address_Credential0VerificationKey vkh
-      ScriptCredential (ScriptHash sh) -> BPcardano_address_Credential1Script sh
+ where
+  ownerMultisig =
+    BPgeniusyield_dex_v2_types_multisig_MultisigScript0MultisigScript
+      [getPubKeyHash $ pubKeyHashToPlutus pkh]
+      []
+  bpStakeCred m = case m of
+    Nothing -> BPOption_StakeCredential1None
+    Just (StakingHash cr) -> BPOption_StakeCredential0Some $ BPStakeCredential0Inline (credentialToCardanoAddress cr)
+    Just (StakingPtr x y z) -> BPOption_StakeCredential0Some $ BPStakeCredential1Pointer x y z
+  bpPaymentAddr =
+    let Address cred mStak = addressToPlutus ownerAddr
+     in BPcardano_address_Address0Address (credentialToBPPayment cred) (bpStakeCred mStak)
+  bpAssetDetails ac amt =
+    let Ledger.AssetClass (Ledger.CurrencySymbol polic, Ledger.TokenName assetName) = assetClassToPlutus ac
+     in BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails
+          (BPgeniusyield_dex_v2_types_assets_AssetClass0AssetClass polic assetName)
+          amt
+  bpPrice = case mReverse of
+    Nothing -> BPgeniusyield_dex_v2_types_order_Price0Fixed (rationalFromPlutus' $ rationalToPlutus straight) BPOption_geniusyield_dex_v2_types_rational_Rational1None
+    Just r -> BPgeniusyield_dex_v2_types_order_Price0Fixed (rationalFromPlutus' $ rationalToPlutus straight) (BPOption_geniusyield_dex_v2_types_rational_Rational0Some $ rationalFromPlutus' $ rationalToPlutus r)
+  bpTime = maybe BPOption_Int1None (BPOption_Int0Some . getPOSIXTime . timeToPlutus)
+  rationalFromPlutus' :: Tx.Rational -> BPgeniusyield_dex_v2_types_rational_Rational
+  rationalFromPlutus' r = BPgeniusyield_dex_v2_types_rational_Rational0Rational (Tx.numerator r) (Tx.denominator r)
+  credentialToBPPayment :: Credential -> BPPaymentCredential
+  credentialToBPPayment = \case
+    PubKeyCredential (PubKeyHash vkh) -> BPPaymentCredential0VerificationKey vkh
+    ScriptCredential (ScriptHash sh) -> BPPaymentCredential1Script sh
+  credentialToCardanoAddress :: Credential -> BPcardano_address_Credential
+  credentialToCardanoAddress = \case
+    PubKeyCredential (PubKeyHash vkh) -> BPcardano_address_Credential0VerificationKey vkh
+    ScriptCredential (ScriptHash sh) -> BPcardano_address_Credential1Script sh
 
 -- | Build blueprint OrderDatum for a fixed-price ONE-WAY TWO order
 mkTwoWayOrderFixedDatum
@@ -160,42 +158,42 @@ mkTwoWayOrderDeltaDatumOneWay pkh ownerAddr nftName (offerAC, offerAmt') priceAC
     (rationalFromPlutus' $ rationalToPlutus takerRatio)
     (rationalFromPlutus' $ rationalToPlutus makerRatio)
     freshnessSeconds
-  where
-    ownerMultisig =
-      BPgeniusyield_dex_v2_types_multisig_MultisigScript0MultisigScript
-        [getPubKeyHash $ pubKeyHashToPlutus pkh]
-        []
-    bpStakeCred m = case m of
-      Nothing -> BPOption_StakeCredential1None
-      Just (StakingHash cr) -> BPOption_StakeCredential0Some $ BPStakeCredential0Inline (credentialToCardanoAddress cr)
-      Just (StakingPtr x y z) -> BPOption_StakeCredential0Some $ BPStakeCredential1Pointer x y z
-    bpPaymentAddr =
-      let Address cred mStak = addressToPlutus ownerAddr
-      in BPcardano_address_Address0Address (credentialToBPPayment cred) (bpStakeCred mStak)
-    bpAssetDetails ac amt =
-      let Ledger.AssetClass (Ledger.CurrencySymbol polic, Ledger.TokenName assetName) = assetClassToPlutus ac
-      in BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails
-           (BPgeniusyield_dex_v2_types_assets_AssetClass0AssetClass polic assetName)
-           amt
-    bpPrice =
-      let
-        okBytes = toBuiltin (paymentVerificationKeyRawBytes oracleKey)
-        rOff = rationalFromPlutus' $ rationalToPlutus offset
-        rSpr = rationalFromPlutus' $ rationalToPlutus spread
-        stra = BPgeniusyield_dex_v2_types_order_PriceDelta0PriceDelta rOff rSpr
-      in
-        BPgeniusyield_dex_v2_types_order_Price1DeltaOracle okBytes stra BPOption_geniusyield_dex_v2_types_order_PriceDelta1None
-    bpTime = maybe BPOption_Int1None (BPOption_Int0Some . getPOSIXTime . timeToPlutus)
-    rationalFromPlutus' :: Tx.Rational -> BPgeniusyield_dex_v2_types_rational_Rational
-    rationalFromPlutus' r = BPgeniusyield_dex_v2_types_rational_Rational0Rational (Tx.numerator r) (Tx.denominator r)
-    credentialToBPPayment :: Credential -> BPPaymentCredential
-    credentialToBPPayment = \case
-      PubKeyCredential (PubKeyHash vkh) -> BPPaymentCredential0VerificationKey vkh
-      ScriptCredential (ScriptHash sh) -> BPPaymentCredential1Script sh
-    credentialToCardanoAddress :: Credential -> BPcardano_address_Credential
-    credentialToCardanoAddress = \case
-      PubKeyCredential (PubKeyHash vkh) -> BPcardano_address_Credential0VerificationKey vkh
-      ScriptCredential (ScriptHash sh) -> BPcardano_address_Credential1Script sh
+ where
+  ownerMultisig =
+    BPgeniusyield_dex_v2_types_multisig_MultisigScript0MultisigScript
+      [getPubKeyHash $ pubKeyHashToPlutus pkh]
+      []
+  bpStakeCred m = case m of
+    Nothing -> BPOption_StakeCredential1None
+    Just (StakingHash cr) -> BPOption_StakeCredential0Some $ BPStakeCredential0Inline (credentialToCardanoAddress cr)
+    Just (StakingPtr x y z) -> BPOption_StakeCredential0Some $ BPStakeCredential1Pointer x y z
+  bpPaymentAddr =
+    let Address cred mStak = addressToPlutus ownerAddr
+     in BPcardano_address_Address0Address (credentialToBPPayment cred) (bpStakeCred mStak)
+  bpAssetDetails ac amt =
+    let Ledger.AssetClass (Ledger.CurrencySymbol polic, Ledger.TokenName assetName) = assetClassToPlutus ac
+     in BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails
+          (BPgeniusyield_dex_v2_types_assets_AssetClass0AssetClass polic assetName)
+          amt
+  bpPrice =
+    let
+      okBytes = toBuiltin (paymentVerificationKeyRawBytes oracleKey)
+      rOff = rationalFromPlutus' $ rationalToPlutus offset
+      rSpr = rationalFromPlutus' $ rationalToPlutus spread
+      stra = BPgeniusyield_dex_v2_types_order_PriceDelta0PriceDelta rOff rSpr
+     in
+      BPgeniusyield_dex_v2_types_order_Price1DeltaOracle okBytes stra BPOption_geniusyield_dex_v2_types_order_PriceDelta1None
+  bpTime = maybe BPOption_Int1None (BPOption_Int0Some . getPOSIXTime . timeToPlutus)
+  rationalFromPlutus' :: Tx.Rational -> BPgeniusyield_dex_v2_types_rational_Rational
+  rationalFromPlutus' r = BPgeniusyield_dex_v2_types_rational_Rational0Rational (Tx.numerator r) (Tx.denominator r)
+  credentialToBPPayment :: Credential -> BPPaymentCredential
+  credentialToBPPayment = \case
+    PubKeyCredential (PubKeyHash vkh) -> BPPaymentCredential0VerificationKey vkh
+    ScriptCredential (ScriptHash sh) -> BPPaymentCredential1Script sh
+  credentialToCardanoAddress :: Credential -> BPcardano_address_Credential
+  credentialToCardanoAddress = \case
+    PubKeyCredential (PubKeyHash vkh) -> BPcardano_address_Credential0VerificationKey vkh
+    ScriptCredential (ScriptHash sh) -> BPcardano_address_Credential1Script sh
 
 -- | Build blueprint OrderDatum for a relative-priced (DeltaOracle) TRUE two-way TWO order
 mkTwoWayOrderDeltaDatumTwoWay
@@ -239,50 +237,50 @@ mkTwoWayOrderDeltaDatumTwoWay pkh ownerAddr nftName (offerAC, offerAmt') (revAC,
     (rationalFromPlutus' $ rationalToPlutus takerRatio)
     (rationalFromPlutus' $ rationalToPlutus makerRatio)
     freshnessSeconds
-  where
-    ownerMultisig =
-      BPgeniusyield_dex_v2_types_multisig_MultisigScript0MultisigScript
-        [getPubKeyHash $ pubKeyHashToPlutus pkh]
-        []
-    bpStakeCred m = case m of
-      Nothing -> BPOption_StakeCredential1None
-      Just (StakingHash cr) -> BPOption_StakeCredential0Some $ BPStakeCredential0Inline (credentialToCardanoAddress cr)
-      Just (StakingPtr x y z) -> BPOption_StakeCredential0Some $ BPStakeCredential1Pointer x y z
-    bpPaymentAddr =
-      let Address cred mStak = addressToPlutus ownerAddr
-      in BPcardano_address_Address0Address (credentialToBPPayment cred) (bpStakeCred mStak)
-    bpAssetDetails ac amt =
-      let Ledger.AssetClass (Ledger.CurrencySymbol polic, Ledger.TokenName assetName) = assetClassToPlutus ac
-      in BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails
-           (BPgeniusyield_dex_v2_types_assets_AssetClass0AssetClass polic assetName)
-           amt
-    bpPrice =
-      let
-        okBytes = toBuiltin (paymentVerificationKeyRawBytes oracleKey)
-        rOffS = rationalFromPlutus' $ rationalToPlutus offS
-        rSprS = rationalFromPlutus' $ rationalToPlutus sprS
-        stra = BPgeniusyield_dex_v2_types_order_PriceDelta0PriceDelta rOffS rSprS
-        rev =
-          case mRev of
-            Nothing ->
-              BPOption_geniusyield_dex_v2_types_order_PriceDelta0Some stra
-            Just (o, s) ->
-              let
-                rOffR = rationalFromPlutus' $ rationalToPlutus o
-                rSprR = rationalFromPlutus' $ rationalToPlutus s
-              in
-                BPOption_geniusyield_dex_v2_types_order_PriceDelta0Some
-                  (BPgeniusyield_dex_v2_types_order_PriceDelta0PriceDelta rOffR rSprR)
-      in
-        BPgeniusyield_dex_v2_types_order_Price1DeltaOracle okBytes stra rev
-    bpTime = maybe BPOption_Int1None (BPOption_Int0Some . getPOSIXTime . timeToPlutus)
-    rationalFromPlutus' :: Tx.Rational -> BPgeniusyield_dex_v2_types_rational_Rational
-    rationalFromPlutus' r = BPgeniusyield_dex_v2_types_rational_Rational0Rational (Tx.numerator r) (Tx.denominator r)
-    credentialToBPPayment :: Credential -> BPPaymentCredential
-    credentialToBPPayment = \case
-      PubKeyCredential (PubKeyHash vkh) -> BPPaymentCredential0VerificationKey vkh
-      ScriptCredential (ScriptHash sh) -> BPPaymentCredential1Script sh
-    credentialToCardanoAddress :: Credential -> BPcardano_address_Credential
-    credentialToCardanoAddress = \case
-      PubKeyCredential (PubKeyHash vkh) -> BPcardano_address_Credential0VerificationKey vkh
-      ScriptCredential (ScriptHash sh) -> BPcardano_address_Credential1Script sh
+ where
+  ownerMultisig =
+    BPgeniusyield_dex_v2_types_multisig_MultisigScript0MultisigScript
+      [getPubKeyHash $ pubKeyHashToPlutus pkh]
+      []
+  bpStakeCred m = case m of
+    Nothing -> BPOption_StakeCredential1None
+    Just (StakingHash cr) -> BPOption_StakeCredential0Some $ BPStakeCredential0Inline (credentialToCardanoAddress cr)
+    Just (StakingPtr x y z) -> BPOption_StakeCredential0Some $ BPStakeCredential1Pointer x y z
+  bpPaymentAddr =
+    let Address cred mStak = addressToPlutus ownerAddr
+     in BPcardano_address_Address0Address (credentialToBPPayment cred) (bpStakeCred mStak)
+  bpAssetDetails ac amt =
+    let Ledger.AssetClass (Ledger.CurrencySymbol polic, Ledger.TokenName assetName) = assetClassToPlutus ac
+     in BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails
+          (BPgeniusyield_dex_v2_types_assets_AssetClass0AssetClass polic assetName)
+          amt
+  bpPrice =
+    let
+      okBytes = toBuiltin (paymentVerificationKeyRawBytes oracleKey)
+      rOffS = rationalFromPlutus' $ rationalToPlutus offS
+      rSprS = rationalFromPlutus' $ rationalToPlutus sprS
+      stra = BPgeniusyield_dex_v2_types_order_PriceDelta0PriceDelta rOffS rSprS
+      rev =
+        case mRev of
+          Nothing ->
+            BPOption_geniusyield_dex_v2_types_order_PriceDelta0Some stra
+          Just (o, s) ->
+            let
+              rOffR = rationalFromPlutus' $ rationalToPlutus o
+              rSprR = rationalFromPlutus' $ rationalToPlutus s
+             in
+              BPOption_geniusyield_dex_v2_types_order_PriceDelta0Some
+                (BPgeniusyield_dex_v2_types_order_PriceDelta0PriceDelta rOffR rSprR)
+     in
+      BPgeniusyield_dex_v2_types_order_Price1DeltaOracle okBytes stra rev
+  bpTime = maybe BPOption_Int1None (BPOption_Int0Some . getPOSIXTime . timeToPlutus)
+  rationalFromPlutus' :: Tx.Rational -> BPgeniusyield_dex_v2_types_rational_Rational
+  rationalFromPlutus' r = BPgeniusyield_dex_v2_types_rational_Rational0Rational (Tx.numerator r) (Tx.denominator r)
+  credentialToBPPayment :: Credential -> BPPaymentCredential
+  credentialToBPPayment = \case
+    PubKeyCredential (PubKeyHash vkh) -> BPPaymentCredential0VerificationKey vkh
+    ScriptCredential (ScriptHash sh) -> BPPaymentCredential1Script sh
+  credentialToCardanoAddress :: Credential -> BPcardano_address_Credential
+  credentialToCardanoAddress = \case
+    PubKeyCredential (PubKeyHash vkh) -> BPcardano_address_Credential0VerificationKey vkh
+    ScriptCredential (ScriptHash sh) -> BPcardano_address_Credential1Script sh

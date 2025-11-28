@@ -6,21 +6,20 @@
 
 {-# OPTIONS -fno-strictness -fno-spec-constr -fno-specialise #-}
 
-module GeniusYield.OnChain.Crypto
-  ( -- * Plutus types
-    DatumHash (..)
-  , PubKey
-  , Signature
-  , TxInfo (..)
-  , UnsafeFromData (..)
+module GeniusYield.OnChain.Crypto (
+  -- * Plutus types
+  DatumHash (..),
+  PubKey,
+  Signature,
+  TxInfo (..),
+  UnsafeFromData (..),
 
-    -- * Signed message
-  , SignedMessage
+  -- * Signed message
+  SignedMessage,
 
-    -- * Signature verification
-  , verifySignedMessageOnChain
-  )
-where
+  -- * Signature verification
+  verifySignedMessageOnChain,
+) where
 
 import GeniusYield.OnChain.Core.Common.Crypto
 import PlutusLedgerApi.V1
@@ -47,11 +46,11 @@ verifySignedMessageOnChain
 verifySignedMessageOnChain info (LedgerBytes pk) SignedMessage {smSignature, smMessageHash}
   | not $ verifyEd25519Signature pk h smSignature = traceError "invalid signature"
   | otherwise = a
-  where
-    h :: BuiltinByteString
-    DatumHash h = smMessageHash
+ where
+  h :: BuiltinByteString
+  DatumHash h = smMessageHash
 
-    a :: a
-    a = case findDatum smMessageHash info of
-      Nothing -> traceError "datum not found"
-      Just (Datum d) -> unsafeFromBuiltinData d
+  a :: a
+  a = case findDatum smMessageHash info of
+    Nothing -> traceError "datum not found"
+    Just (Datum d) -> unsafeFromBuiltinData d

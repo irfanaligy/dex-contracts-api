@@ -1,25 +1,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module GeniusYield.Crypto
-  ( -- * Re-Exports
-    ToData
+module GeniusYield.Crypto (
+  -- * Re-Exports
+  ToData,
 
-    -- * Signed message
-  , SignedMessage
+  -- * Signed message
+  SignedMessage,
 
-    -- * Message signing
-  , signMessage
+  -- * Message signing
+  signMessage,
 
-    -- * Signature verification
-  , verifySignedMessageOffChain
+  -- * Signature verification
+  verifySignedMessageOffChain,
 
-    -- * Offchain types for mimicking onchain signature flow
-  , SignatureOffchain (..)
-  , SignedMessageOffchain (..)
-  , signedMessageToOnchain
-  )
-where
+  -- * Offchain types for mimicking onchain signature flow
+  SignatureOffchain (..),
+  SignedMessageOffchain (..),
+  signedMessageToOnchain,
+) where
 
 import Cardano.Api qualified as Api
 import Crypto.Error
@@ -46,14 +45,14 @@ instance ToJSON SignatureOffchain where
 
 instance FromJSON SignatureOffchain where
   parseJSON =
-    Aeson.withText "SignatureOffchain"
-      $ either fail (pure . SignatureOffchain) . Base16.decode . TE.encodeUtf8
+    Aeson.withText "SignatureOffchain" $
+      either fail (pure . SignatureOffchain) . Base16.decode . TE.encodeUtf8
 
 data SignedMessageOffchain a = SignedMessageOffchain
-  { smoSignature :: SignatureOffchain
-  -- ^ The cryptographic signature.
-  , smoMessageHash :: GYDatumHash
-  -- ^ The hash of the message.
+  { -- | The cryptographic signature.
+    smoSignature :: SignatureOffchain,
+    -- | The hash of the message.
+    smoMessageHash :: GYDatumHash
   }
   deriving (FromJSON, Generic, Show, ToJSON)
 
@@ -94,10 +93,10 @@ signMessage msg skey = case Crypto.secretKey $ Api.serialiseToRawBytes $ payment
       dh = hashDatum d
       msg' = Api.serialiseToRawBytes $ datumHashToApi dh
       sig = Crypto.sign skey' pkey msg'
-    in
+     in
       SignedMessageOffchain
-        { smoSignature = SignatureOffchain $ BA.convert sig
-        , smoMessageHash = dh
+        { smoSignature = SignatureOffchain $ BA.convert sig,
+          smoMessageHash = dh
         }
 
 {- | Verifies a signed message.
@@ -132,6 +131,6 @@ verifySignedMessageOffChain
 verifySignedMessageOffChain pk SignedMessage {smSignature, smMessageHash} a
   | not $ verifyEd25519Signature pk' h smSignature = False
   | otherwise = smMessageHash == coerce (datumHashToPlutus $ hashDatum $ datumFromPlutus' $ toBuiltinData a)
-  where
-    pk' = coerce . PlutusTx.toBuiltin $ paymentVerificationKeyRawBytes pk
-    h = coerce smMessageHash
+ where
+  pk' = coerce . PlutusTx.toBuiltin $ paymentVerificationKeyRawBytes pk
+  h = coerce smMessageHash

@@ -4,15 +4,14 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
-module GeniusYield.OnChain.Plutarch.Time
-  ( pcontains
-  , plowerbound
-  , pupperBound
-  , pinterval
-  , pFrom
-  , pTo
-  )
-where
+module GeniusYield.OnChain.Plutarch.Time (
+  pcontains,
+  plowerbound,
+  pupperBound,
+  pinterval,
+  pFrom,
+  pTo,
+) where
 
 import Plutarch.Api.V1
 import Plutarch.Extra.TermCont (pletFieldsC)
@@ -61,7 +60,7 @@ plowerbound = phoistAcyclic $ plam $ \a ->
             # pdata (pconstant True)
             # pdnil
         )
-  in
+   in
     pcon lb
 
 -- | 'pupperBound' is plutarch level function of 'upperBound'.
@@ -77,7 +76,7 @@ pupperBound = phoistAcyclic $ plam $ \a ->
             # pdata (pconstant True)
             # pdnil
         )
-  in
+   in
     pcon ub
 
 -- | 'pFrom' is the plutarch level function of 'from'.
@@ -92,17 +91,17 @@ pFrom = phoistAcyclic $ plam $ \a ->
     lb = plowerbound # a
     ubValue = pcon $ PPosInf pdnil
     ub =
-      pcon
-        $ PUpperBound
+      pcon $
+        PUpperBound
           ( pdcons @"_0"
               # pdata ubValue
               #$ pdcons @"_1"
               # pdata (pconstant True)
               # pdnil
           )
-  in
-    pcon
-      $ PInterval
+   in
+    pcon $
+      PInterval
         ( pdcons @"from"
             # pdata lb
             #$ pdcons @"to"
@@ -121,8 +120,8 @@ pTo = phoistAcyclic $ plam $ \a ->
   let
     lbValue = pcon $ PNegInf pdnil
     lb =
-      pcon
-        $ PLowerBound
+      pcon $
+        PLowerBound
           ( pdcons @"_0"
               # pdata lbValue
               #$ pdcons @"_1"
@@ -130,9 +129,9 @@ pTo = phoistAcyclic $ plam $ \a ->
               # pdnil
           )
     ub = pupperBound # a
-  in
-    pcon
-      $ PInterval
+   in
+    pcon $
+      PInterval
         ( pdcons @"from"
             # pdata lb
             #$ pdcons @"to"
@@ -152,9 +151,9 @@ pinterval = phoistAcyclic $ plam $ \lowerB upperB ->
   let
     lb = plowerbound # lowerB
     ub = pupperBound # upperB
-  in
-    pcon
-      $ PInterval
+   in
+    pcon $
+      PInterval
         ( pdcons @"from"
             # pdata lb
             #$ pdcons @"to"

@@ -1,12 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module GeniusYield.Api.Oracle.Http
-  ( OraclePriceFraction (..)
-  , OracleCertificateApiResponse (..)
-  , fetchOracleQuote
-  , assetToOracleIdentifiers
-  )
-where
+module GeniusYield.Api.Oracle.Http (
+  OraclePriceFraction (..),
+  OracleCertificateApiResponse (..),
+  fetchOracleQuote,
+  assetToOracleIdentifiers,
+) where
 
 import Control.Exception (displayException)
 import Data.Aeson qualified as Aeson
@@ -18,10 +17,10 @@ import Network.HTTP.Simple
 
 -- | Fraction returned by the oracle price endpoint.
 data OraclePriceFraction = OraclePriceFraction
-  { numerator :: !Integer
-  , denominator :: !Integer
+  { numerator :: !Integer,
+    denominator :: !Integer
   }
-  deriving stock Show
+  deriving stock (Show)
 
 instance Aeson.FromJSON OraclePriceFraction where
   parseJSON = Aeson.withObject "OraclePriceFraction" $ \v ->
@@ -31,11 +30,11 @@ instance Aeson.FromJSON OraclePriceFraction where
 
 -- | Response body expected from the oracle price endpoint.
 data OracleCertificateApiResponse = OracleCertificateApiResponse
-  { oarStatus :: !Text.Text
-  , oarPrice :: !OraclePriceFraction
-  , oarTimestamp :: !UTCTime
+  { oarStatus :: !Text.Text,
+    oarPrice :: !OraclePriceFraction,
+    oarTimestamp :: !UTCTime
   }
-  deriving stock Show
+  deriving stock (Show)
 
 instance Aeson.FromJSON OracleCertificateApiResponse where
   parseJSON = Aeson.withObject "OracleCertificateApiResponse" $ \v ->
@@ -48,8 +47,8 @@ instance Aeson.FromJSON OracleCertificateApiResponse where
 assetToOracleIdentifiers :: GYAssetClass -> (Text.Text, Text.Text)
 assetToOracleIdentifiers GYLovelace = ("", "")
 assetToOracleIdentifiers (GYToken policyId tokenName) =
-  ( mintingPolicyIdToText policyId
-  , tokenNameToHex tokenName
+  ( mintingPolicyIdToText policyId,
+    tokenNameToHex tokenName
   )
 
 {- | Fetch a price quote from the oracle HTTP endpoint.
@@ -70,14 +69,14 @@ fetchOracleQuote endpoint baseAsset quoteAsset = do
     (quoteSymbol, quoteToken) = assetToOracleIdentifiers quoteAsset
     body =
       Aeson.object
-        [ "baseSymbol" Aeson..= baseSymbol
-        , "baseToken" Aeson..= baseToken
-        , "quoteSymbol" Aeson..= quoteSymbol
-        , "quoteToken" Aeson..= quoteToken
+        [ "baseSymbol" Aeson..= baseSymbol,
+          "baseToken" Aeson..= baseToken,
+          "quoteSymbol" Aeson..= quoteSymbol,
+          "quoteToken" Aeson..= quoteToken
         ]
     req =
-      setRequestMethod "POST"
-        $ setRequestBodyJSON body req0
+      setRequestMethod "POST" $
+        setRequestBodyJSON body req0
   resp <- httpJSONEither req
   case getResponseBody resp of
     Left err ->

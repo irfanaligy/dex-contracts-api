@@ -1,18 +1,17 @@
 {-# LANGUAGE LambdaCase #-}
 
-module GeniusYield.TxBuilder.Upgrade
-  ( upgradeTxSkeleton
-  , upgradeTxSkeletonToV3
-  )
-where
+module GeniusYield.TxBuilder.Upgrade (
+  upgradeTxSkeleton,
+  upgradeTxSkeletonToV3,
+) where
 
 import Data.Map.Strict qualified as Map
-import GeniusYield.TxBuilder.Common
-  ( GYTxSkeleton (..)
-  , GYTxSkeletonProposalProcedures (..)
-  , GYTxSkeletonRefIns (..)
-  , GYTxSkeletonVotingProcedures (..)
-  )
+import GeniusYield.TxBuilder.Common (
+  GYTxSkeleton (..),
+  GYTxSkeletonProposalProcedures (..),
+  GYTxSkeletonRefIns (..),
+  GYTxSkeletonVotingProcedures (..),
+ )
 import GeniusYield.Types
 import GeniusYield.Types.TxCert.Internal (GYTxCert (..))
 import Unsafe.Coerce (unsafeCoerce)
@@ -23,30 +22,30 @@ upgradeTxSkeleton = upgradeTxSkeletonToV3
 upgradeTxSkeletonToV3 :: GYTxSkeleton PlutusV2 -> GYTxSkeleton PlutusV3
 upgradeTxSkeletonToV3 GYTxSkeleton {..} =
   GYTxSkeleton
-    { gytxIns = fmap upgradeTxIn gytxIns
-    , gytxOuts = fmap upgradeTxOut gytxOuts
-    , gytxRefIns = upgradeRefIns gytxRefIns
-    , gytxMint = Map.fromList $ fmap upgradeMintEntry (Map.toList gytxMint)
-    , gytxWdrls = fmap upgradeTxWdrl gytxWdrls
-    , gytxSigs = gytxSigs
-    , gytxCerts = fmap upgradeTxCert gytxCerts
-    , gytxInvalidBefore = gytxInvalidBefore
-    , gytxInvalidAfter = gytxInvalidAfter
-    , gytxMetadata = gytxMetadata
-    , gytxVotingProcedures = upgradeVotingProcedures gytxVotingProcedures
-    , gytxProposalProcedures = upgradeProposalProcedures gytxProposalProcedures
+    { gytxIns = fmap upgradeTxIn gytxIns,
+      gytxOuts = fmap upgradeTxOut gytxOuts,
+      gytxRefIns = upgradeRefIns gytxRefIns,
+      gytxMint = Map.fromList $ fmap upgradeMintEntry (Map.toList gytxMint),
+      gytxWdrls = fmap upgradeTxWdrl gytxWdrls,
+      gytxSigs = gytxSigs,
+      gytxCerts = fmap upgradeTxCert gytxCerts,
+      gytxInvalidBefore = gytxInvalidBefore,
+      gytxInvalidAfter = gytxInvalidAfter,
+      gytxMetadata = gytxMetadata,
+      gytxVotingProcedures = upgradeVotingProcedures gytxVotingProcedures,
+      gytxProposalProcedures = upgradeProposalProcedures gytxProposalProcedures
     }
-  where
-    upgradeMintEntry
-      :: (GYBuildScript PlutusV2, (Map.Map GYTokenName Integer, GYRedeemer))
-      -> (GYBuildScript PlutusV3, (Map.Map GYTokenName Integer, GYRedeemer))
-    upgradeMintEntry (script, payload) = (upgradeBuildScript script, payload)
+ where
+  upgradeMintEntry
+    :: (GYBuildScript PlutusV2, (Map.Map GYTokenName Integer, GYRedeemer))
+    -> (GYBuildScript PlutusV3, (Map.Map GYTokenName Integer, GYRedeemer))
+  upgradeMintEntry (script, payload) = (upgradeBuildScript script, payload)
 
 upgradeTxIn :: GYTxIn PlutusV2 -> GYTxIn PlutusV3
 upgradeTxIn GYTxIn {..} =
   GYTxIn
-    { gyTxInTxOutRef = gyTxInTxOutRef
-    , gyTxInWitness = upgradeTxInWitness gyTxInWitness
+    { gyTxInTxOutRef = gyTxInTxOutRef,
+      gyTxInWitness = upgradeTxInWitness gyTxInWitness
     }
 
 upgradeTxInWitness :: GYTxInWitness PlutusV2 -> GYTxInWitness PlutusV3
@@ -60,10 +59,10 @@ upgradeTxInWitness = \case
 upgradeTxOut :: GYTxOut PlutusV2 -> GYTxOut PlutusV3
 upgradeTxOut GYTxOut {..} =
   GYTxOut
-    { gyTxOutAddress = gyTxOutAddress
-    , gyTxOutValue = gyTxOutValue
-    , gyTxOutDatum = fmap (fmap upgradeTxOutUseInlineDatum) gyTxOutDatum
-    , gyTxOutRefS = gyTxOutRefS
+    { gyTxOutAddress = gyTxOutAddress,
+      gyTxOutValue = gyTxOutValue,
+      gyTxOutDatum = fmap (fmap upgradeTxOutUseInlineDatum) gyTxOutDatum,
+      gyTxOutRefS = gyTxOutRefS
     }
 
 upgradeTxOutUseInlineDatum
@@ -83,16 +82,16 @@ upgradeRefIns = \case
 upgradeTxWdrl :: GYTxWdrl PlutusV2 -> GYTxWdrl PlutusV3
 upgradeTxWdrl GYTxWdrl {..} =
   GYTxWdrl
-    { gyTxWdrlStakeAddress = gyTxWdrlStakeAddress
-    , gyTxWdrlAmount = gyTxWdrlAmount
-    , gyTxWdrlWitness = upgradeBuildWitness gyTxWdrlWitness
+    { gyTxWdrlStakeAddress = gyTxWdrlStakeAddress,
+      gyTxWdrlAmount = gyTxWdrlAmount,
+      gyTxWdrlWitness = upgradeBuildWitness gyTxWdrlWitness
     }
 
 upgradeTxCert :: GYTxCert PlutusV2 -> GYTxCert PlutusV3
 upgradeTxCert GYTxCert {..} =
   GYTxCert
-    { gyTxCertCertificate = gyTxCertCertificate
-    , gyTxCertWitness = fmap upgradeBuildWitness gyTxCertWitness
+    { gyTxCertCertificate = gyTxCertCertificate,
+      gyTxCertWitness = fmap upgradeBuildWitness gyTxCertWitness
     }
 
 upgradeVotingProcedures

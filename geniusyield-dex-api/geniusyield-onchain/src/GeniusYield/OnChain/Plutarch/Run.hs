@@ -4,14 +4,13 @@
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module GeniusYield.OnChain.Plutarch.Run
-  ( applyArguments
-  , evalT
-  , evalSerialize
-  , evalWithArgsT
-  , evalWithArgsT'
-  )
-where
+module GeniusYield.OnChain.Plutarch.Run (
+  applyArguments,
+  evalT,
+  evalSerialize,
+  evalWithArgsT,
+  evalWithArgsT',
+) where
 
 import Control.Lens.Combinators (over)
 import Data.Bifunctor (first)
@@ -30,7 +29,7 @@ applyArguments (Script p) args =
   let
     termArgs = mkConstant () <$> args
     applied t = mkIterApp () t termArgs
-  in
+   in
     Script $ over progTerm applied p
 
 evalSerialize :: ClosedTerm a -> Either Text ShortByteString

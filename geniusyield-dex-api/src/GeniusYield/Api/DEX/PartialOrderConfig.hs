@@ -1,71 +1,70 @@
-module GeniusYield.Api.DEX.PartialOrderConfig
-  ( PORef (..)
-  , SomePORef (..)
-  , withSomePORef
-  , PORefs (..)
-  , PocdException (..)
-  , partialOrderConfigAddr
+module GeniusYield.Api.DEX.PartialOrderConfig (
+  PORef (..),
+  SomePORef (..),
+  withSomePORef,
+  PORefs (..),
+  PocdException (..),
+  partialOrderConfigAddr,
   -- , deployPartialOrderConfig
-  , fetchPartialOrderConfig
-  , unsafeFetchPartialOrderConfig
-  , fetchPartialOrderConfig'
-  , unsafeFetchPartialOrderConfig'
-  , RefPocd (..)
-  , SomeRefPocd (..)
-  , withSomeRefPocd
-  , RefPocds
-  , selectV1RefPocd
-  , selectV1_1RefPocd
-  , selectRefPocd
-  , selectRefPocd'
-  , selectPor
-  , selectPor'
-  , fetchPartialOrderConfigs
-  , updatePartialOrderConfig
-  )
-where
+  fetchPartialOrderConfig,
+  unsafeFetchPartialOrderConfig,
+  fetchPartialOrderConfig',
+  unsafeFetchPartialOrderConfig',
+  RefPocd (..),
+  SomeRefPocd (..),
+  withSomeRefPocd,
+  RefPocds,
+  selectV1RefPocd,
+  selectV1_1RefPocd,
+  selectRefPocd,
+  selectRefPocd',
+  selectPor,
+  selectPor',
+  fetchPartialOrderConfigs,
+  updatePartialOrderConfig,
+) where
 
 import Control.Monad.Reader (ask)
 import Data.Strict.Tuple (Pair (..))
 import Data.Text qualified as Txt
-import GeniusYield.HTTP.Errors (GYApiError (..), IsGYApiError (..))
-import GeniusYield.Imports
-import GeniusYield.TxBuilder
-  ( GYTxQueryMonad (utxosAtAddressWithDatums)
-  , GYTxSkeleton
-  , addressFromPlutus'
-  , mustBeSignedBy
-  , mustHaveInput
-  , mustHaveOutput
-  -- , mustMint
-  , scriptAddress
-  , throwAppError
-  , utxoDatumPure'
-  )
-import GeniusYield.Types
-import Network.HTTP.Types (status400)
+-- , mustMint
 
 -- import GeniusYield.Api.DEX.Utils (NftInfo (..), nftInfo)
 -- import GeniusYield.Api.OneWay (deployScript)
 import GeniusYield.Api.Types
+import GeniusYield.HTTP.Errors (GYApiError (..), IsGYApiError (..))
+import GeniusYield.Imports
 import GeniusYield.Scripts (GYCompiledScripts (..))
-import GeniusYield.Scripts.DEX.PartialOrderConfig
-  ( POCVersion (..)
-  , PartialOrderConfigDatumF (..)
-  , SingPOCVersion (..)
-  , SingPOCVersionI (singPOCVersion)
-  , fromSingPOCVersion
-  , toSingPOCVersion
-  , withSomeSingPOCVersion
-  )
+import GeniusYield.Scripts.DEX.PartialOrderConfig (
+  POCVersion (..),
+  PartialOrderConfigDatumF (..),
+  SingPOCVersion (..),
+  SingPOCVersionI (singPOCVersion),
+  fromSingPOCVersion,
+  toSingPOCVersion,
+  withSomeSingPOCVersion,
+ )
+import GeniusYield.TxBuilder (
+  GYTxQueryMonad (utxosAtAddressWithDatums),
+  GYTxSkeleton,
+  addressFromPlutus',
+  mustBeSignedBy,
+  mustHaveInput,
+  mustHaveOutput,
+  scriptAddress,
+  throwAppError,
+  utxoDatumPure',
+ )
+import GeniusYield.Types
+import Network.HTTP.Types (status400)
 
 data PORef (v :: POCVersion) = PORef
-  { porRefNft :: !GYAssetClass
-  -- ^ The reference NFT.
-  , porMintRef :: !GYTxOutRef
-  -- ^ The location of the reference NFT minting policy reference script.
-  , porValRef :: !GYTxOutRef
-  -- ^ The location of the validator reference script.
+  { -- | The reference NFT.
+    porRefNft :: !GYAssetClass,
+    -- | The location of the reference NFT minting policy reference script.
+    porMintRef :: !GYTxOutRef,
+    -- | The location of the validator reference script.
+    porValRef :: !GYTxOutRef
   }
   deriving stock (Generic, Show)
   deriving anyclass (FromJSON, ToJSON)
@@ -76,31 +75,30 @@ withSomePORef :: SomePORef -> (forall v. SingPOCVersionI v => PORef v -> r) -> r
 withSomePORef (SomePORef por) f = f por
 
 data PORefs = PORefs
-  { porV1 :: !(PORef 'POCVersion1)
-  -- ^ For the V1 version of partial order family of contract.
-  , porV1_1 :: !(PORef 'POCVersion1_1)
-  -- ^ For the V1_1 version of partial order family of contract.
+  { -- | For the V1 version of partial order family of contract.
+    porV1 :: !(PORef 'POCVersion1),
+    -- | For the V1_1 version of partial order family of contract.
+    porV1_1 :: !(PORef 'POCVersion1_1)
   }
   deriving stock (Generic, Show)
   deriving anyclass (FromJSON, ToJSON)
 
 newtype PocdException = PocdException GYAssetClass
-  deriving stock Show
-  deriving anyclass Exception
+  deriving stock (Show)
+  deriving anyclass (Exception)
 
 instance IsGYApiError PocdException where
   toApiError (PocdException nftToken) =
     GYApiError
-      { gaeErrorCode = "PARTIAL_ORDER_CONFIG_NOT_FOUND"
-      , gaeHttpStatus = status400
-      , gaeMsg = Txt.pack $ printf "Partial order config not found for NFT: %s" nftToken
+      { gaeErrorCode = "PARTIAL_ORDER_CONFIG_NOT_FOUND",
+        gaeHttpStatus = status400,
+        gaeMsg = Txt.pack $ printf "Partial order config not found for NFT: %s" nftToken
       }
 
 partialOrderConfigAddr :: GYApiQueryMonad m => POCVersion -> GYAssetClass -> m GYAddress
 partialOrderConfigAddr pocVersion nftToken = do
   gycs <- ask
   scriptAddress $ dexPartialOrderConfigValidator gycs pocVersion nftToken
-
 
 {-
 deployPartialOrderConfig
@@ -194,7 +192,7 @@ selectPor' PORefs {..} = case (singPOCVersion @v) of
 fetchPartialOrderConfig :: GYApiQueryMonad m => POCVersion -> PORefs -> m SomeRefPocd
 fetchPartialOrderConfig pocVersion pors =
   let SomePORef (PORef {..}) = selectPor pors pocVersion
-  in unsafeFetchPartialOrderConfig pocVersion porRefNft
+   in unsafeFetchPartialOrderConfig pocVersion porRefNft
 
 -- | Unsafe as it takes NFT's asset class where this NFT might not belong to the given version.
 unsafeFetchPartialOrderConfig :: GYApiQueryMonad m => POCVersion -> GYAssetClass -> m SomeRefPocd
@@ -268,20 +266,20 @@ updatePartialOrderConfig
       validator = dexPartialOrderConfigValidator gycs pocVersion nftToken
       datum =
         pocd
-          { pocdSignatories = signatories
-          , pocdReqSignatories = max 1 $ toInteger reqSignatories
-          , pocdFeeAddr = feeAddr
-          , pocdMakerFeeFlat = toInteger makerFeeFlat
-          , pocdMakerFeeRatio = max 0 makerFeeRatio
-          , pocdTakerFee = toInteger takerFee
-          , pocdMinDeposit = toInteger minDeposit
+          { pocdSignatories = signatories,
+            pocdReqSignatories = max 1 $ toInteger reqSignatories,
+            pocdFeeAddr = feeAddr,
+            pocdMakerFeeFlat = toInteger makerFeeFlat,
+            pocdMakerFeeRatio = max 0 makerFeeRatio,
+            pocdTakerFee = toInteger takerFee,
+            pocdMinDeposit = toInteger minDeposit
           }
 
-    pure
-      $ mustHaveInput
+    pure $
+      mustHaveInput
         GYTxIn
-          { gyTxInTxOutRef = ref
-          , gyTxInWitness =
+          { gyTxInTxOutRef = ref,
+            gyTxInWitness =
               GYTxInWitnessScript
                 (GYInScript validator)
                 (Just $ datumFromPlutusData pocd)
@@ -289,10 +287,10 @@ updatePartialOrderConfig
           }
         <> mustHaveOutput
           GYTxOut
-            { gyTxOutAddress = addr
-            , gyTxOutValue = valueSingleton nftToken 1
-            , gyTxOutDatum = Just (datumFromPlutusData datum, GYTxOutUseInlineDatum)
-            , gyTxOutRefS = Nothing
+            { gyTxOutAddress = addr,
+              gyTxOutValue = valueSingleton nftToken 1,
+              gyTxOutDatum = Just (datumFromPlutusData datum, GYTxOutUseInlineDatum),
+              gyTxOutRefS = Nothing
             }
         <> mconcat (mustBeSignedBy <$> expSignatures)
         <> if pocVersion == POCVersion1
@@ -300,8 +298,8 @@ updatePartialOrderConfig
           else
             mustHaveOutput
               GYTxOut
-                { gyTxOutAddress = feeAddr
-                , gyTxOutValue = mempty
-                , gyTxOutDatum = Nothing
-                , gyTxOutRefS = Nothing
+                { gyTxOutAddress = feeAddr,
+                  gyTxOutValue = mempty,
+                  gyTxOutDatum = Nothing,
+                  gyTxOutRefS = Nothing
                 }

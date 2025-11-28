@@ -1,14 +1,13 @@
-module GeniusYield.Scripts.DEX.Version
-  ( POCVersion (..)
-  , defaultPOCVersion
-  , SingPOCVersion (..)
-  , toSingPOCVersion
-  , fromSingPOCVersion
-  , SingPOCVersionI (..)
-  , SomeSingPOCVersion (..)
-  , withSomeSingPOCVersion
-  )
-where
+module GeniusYield.Scripts.DEX.Version (
+  POCVersion (..),
+  defaultPOCVersion,
+  SingPOCVersion (..),
+  toSingPOCVersion,
+  fromSingPOCVersion,
+  SingPOCVersionI (..),
+  SomeSingPOCVersion (..),
+  withSomeSingPOCVersion,
+) where
 
 import Control.Lens ((?~))
 import Data.Aeson (FromJSON, ToJSON)
@@ -42,13 +41,13 @@ instance Swagger.ToParamSchema POCVersion where
 
 instance Swagger.ToSchema POCVersion where
   declareNamedSchema p =
-    pure
-      $ Swagger.named "POCVersion"
-      $ Swagger.paramSchemaToSchema p
-        & Swagger.example
-        ?~ Aeson.toJSON POCVersion1
-          & Swagger.description
-        ?~ "Version of the family of partial order contracts"
+    pure $
+      Swagger.named "POCVersion" $
+        Swagger.paramSchemaToSchema p
+          & Swagger.example
+          ?~ Aeson.toJSON POCVersion1
+            & Swagger.description
+          ?~ "Version of the family of partial order contracts"
 
 data SingPOCVersion (v :: POCVersion) where
   SingPOCVersion1 :: SingPOCVersion 'POCVersion1

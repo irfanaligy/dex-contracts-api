@@ -1,31 +1,29 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module GeniusYield.Scripts.DEX.PartialOrder
-  ( -- * Validator
-    partialOrderValidator
-  , partialOrderValidatorHash
-  , PartialOrderFeeOutput (..)
-  , PartialOrderContainedFee (..)
+module GeniusYield.Scripts.DEX.PartialOrder (
+  -- * Validator
+  partialOrderValidator,
+  partialOrderValidatorHash,
+  PartialOrderFeeOutput (..),
+  PartialOrderContainedFee (..),
 
-    -- * Datum
-  , PartialOrderDatum (..)
+  -- * Datum
+  PartialOrderDatum (..),
 
-    -- * Redeemer
-  , PartialOrderAction (..)
-  )
-where
+  -- * Redeemer
+  PartialOrderAction (..),
+) where
 
 import GeniusYield.OnChain.Core.Common.DEX.PartialOrder
+import GeniusYield.Scripts.DEX.PartialOrderConfig (POCVersion, partialOrderConfigPlutusAddr)
+import GeniusYield.Scripts.Internal
 import GeniusYield.Types
 import Ply ((#))
 
-import GeniusYield.Scripts.DEX.PartialOrderConfig (POCVersion, partialOrderConfigPlutusAddr)
-import GeniusYield.Scripts.Internal
-
 partialOrderValidator :: GYCompiledScriptsRaw -> POCVersion -> GYAssetClass -> GYScript PlutusV2
 partialOrderValidator gycs@GYCompiledScriptsRaw {gycsDEXPartialOrder} pocVersion ac =
-  validatorFromPly
-    $ gycsDEXPartialOrder
+  validatorFromPly $
+    gycsDEXPartialOrder
       # partialOrderConfigPlutusAddr gycs pocVersion ac
       # assetClassToPlutus ac
 

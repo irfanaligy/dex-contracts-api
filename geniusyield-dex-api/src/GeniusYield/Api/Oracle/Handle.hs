@@ -1,33 +1,31 @@
-module GeniusYield.Api.Oracle.Handle
-  ( OracleHandle
-  , oracleHandleFromAggregator
-  , oracleHandleEstimate
-  , oracleHandleEstimateUnbounded
-  , oracleHandleDiagnostics
-  , buildOracleHandle
-  )
-where
+module GeniusYield.Api.Oracle.Handle (
+  OracleHandle,
+  oracleHandleFromAggregator,
+  oracleHandleEstimate,
+  oracleHandleEstimateUnbounded,
+  oracleHandleDiagnostics,
+  buildOracleHandle,
+) where
 
 import Data.List.NonEmpty qualified as NE
 import Data.Text (Text)
-import GeniusYield.Types (GYAssetClass, GYNetworkId, GYPaymentSigningKey)
-
 import GeniusYield.Api.Oracle
 import GeniusYield.Api.Oracle.Providers
 import GeniusYield.Config.DEX (GYOracleConfig)
+import GeniusYield.Types (GYAssetClass, GYNetworkId, GYPaymentSigningKey)
 
 -- | Runtime oracle handle that owns the aggregator cache.
 data OracleHandle = OracleHandle
-  { ohAggregator :: !OracleAggregator
-  , ohDiagnostics :: ![Text]
+  { ohAggregator :: !OracleAggregator,
+    ohDiagnostics :: ![Text]
   }
 
 -- | Build an 'OracleHandle' around an existing aggregator and diagnostics bundle.
 oracleHandleFromAggregator :: OracleAggregator -> [Text] -> OracleHandle
 oracleHandleFromAggregator aggregator diagnostics =
   OracleHandle
-    { ohAggregator = aggregator
-    , ohDiagnostics = diagnostics
+    { ohAggregator = aggregator,
+      ohDiagnostics = diagnostics
     }
 
 oracleHandleDiagnostics :: OracleHandle -> [Text]
@@ -59,9 +57,9 @@ buildOracleHandle nid signingKey cfg = do
     Left err -> pure (Left err)
     Right bundle -> do
       aggregator <- mkAggregator (opbCfg bundle) (NE.toList (opbProviders bundle)) (NE.toList (opbWeights bundle))
-      pure
-        $ Right
+      pure $
+        Right
           OracleHandle
-            { ohAggregator = aggregator
-            , ohDiagnostics = opbDiagnostics bundle
+            { ohAggregator = aggregator,
+              ohDiagnostics = opbDiagnostics bundle
             }

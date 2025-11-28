@@ -16,13 +16,13 @@ module GeniusYield.Server.Ctx (
 import Data.Strict.Tuple (Pair (..))
 import GeniusYield.Imports
 import GeniusYield.OrderBot.Adapter.Maestro (MaestroProvider)
+import GeniusYield.Scripts (GYCompiledScripts, readCompiledScripts)
 import GeniusYield.Server.Constants (DEXInfo (..), dexInfoDefaultMainnet, dexInfoDefaultPreprod)
 import GeniusYield.Transaction
 import GeniusYield.TxBuilder
 import GeniusYield.Types
 import RIO
 import Servant.Client (ClientEnv)
-import GeniusYield.Scripts (GYCompiledScripts, readCompiledScripts)
 
 type TapToolsApiKey = Text
 
@@ -107,8 +107,8 @@ runSkeletonWithStrategyF cstrat ctx addrs addr mcollateral skeleton = do
 
 runQuery :: Ctx -> ReaderT GYCompiledScripts GYTxQueryMonadIO a -> IO a
 runQuery ctx r = do
-    gycs <- readCompiledScripts
-    runQueryWithReader ctx gycs r
+  gycs <- readCompiledScripts
+  runQueryWithReader ctx gycs r
 
 runQueryWithReader :: Ctx -> a -> ReaderT a GYTxQueryMonadIO b -> IO b
 runQueryWithReader ctx a q = do

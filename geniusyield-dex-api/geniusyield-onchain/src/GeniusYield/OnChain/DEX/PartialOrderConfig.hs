@@ -10,44 +10,43 @@
 
 module GeniusYield.OnChain.DEX.PartialOrderConfig (mkPartialOrderConfigValidator) where
 
+import GeniusYield.OnChain.DEX.PartialOrder.Types (PPartialOrderConfigDatum)
+import GeniusYield.OnChain.Plutarch.Api (
+  PAssetClass,
+  pguardC,
+  pguardC',
+  phasSignatures,
+  pletC,
+  pletFieldsC,
+  pmatchC,
+ )
+import GeniusYield.OnChain.Plutarch.Utils (
+  pallUnique,
+  pfindOwnInput,
+  pgetContinuingOutputUsingNft,
+  pparseDatum',
+ )
+import GeniusYield.OnChain.Plutarch.Value (passetClassValueOf, pvalTotalEntries)
 import Plutarch (Term, pcon, plam, unTermCont, (#), type (:-->))
 import Plutarch.Api.V1 (PPubKeyHash, PScriptPurpose (PSpending))
 import Plutarch.Api.V2 qualified as PV2
 import Plutarch.DataRepr (pfield)
 import Plutarch.Extra.RationalData
 import Plutarch.List (pfind)
-import Plutarch.Prelude
-  ( PAsData
-  , PBool (..)
-  , PBuiltinList
-  , PEq ((#==))
-  , PInteger
-  , PMaybe (..)
-  , PPartialOrd ((#<=))
-  , PUnit (..)
-  , getField
-  , pfromData
-  , plength
-  , pmatch
-  )
-
-import GeniusYield.OnChain.DEX.PartialOrder.Types (PPartialOrderConfigDatum)
-import GeniusYield.OnChain.Plutarch.Api
-  ( PAssetClass
-  , pguardC
-  , pguardC'
-  , phasSignatures
-  , pletC
-  , pletFieldsC
-  , pmatchC
-  )
-import GeniusYield.OnChain.Plutarch.Utils
-  ( pallUnique
-  , pfindOwnInput
-  , pgetContinuingOutputUsingNft
-  , pparseDatum'
-  )
-import GeniusYield.OnChain.Plutarch.Value (passetClassValueOf, pvalTotalEntries)
+import Plutarch.Prelude (
+  PAsData,
+  PBool (..),
+  PBuiltinList,
+  PEq ((#==)),
+  PInteger,
+  PMaybe (..),
+  PPartialOrd ((#<=)),
+  PUnit (..),
+  getField,
+  pfromData,
+  plength,
+  pmatch,
+ )
 
 mkPartialOrderConfigValidator
   :: forall s
@@ -64,10 +63,10 @@ mkPartialOrderConfigValidator =
     ctxFs <- pletFieldsC @["txInfo", "purpose"] ctx
     info <-
       pletFieldsC
-        @[ "inputs"
-         , "outputs"
-         , "signatories"
-         , "datums"
+        @[ "inputs",
+           "outputs",
+           "signatories",
+           "datums"
          ]
         $ getField @"txInfo" ctxFs
 
@@ -84,9 +83,9 @@ mkPartialOrderConfigValidator =
 
     dFs <-
       pletFieldsC
-        @[ "pocdSignatories"
-         , "pocdReqSignatories"
-         , "pocdNftSymbol"
+        @[ "pocdSignatories",
+           "pocdReqSignatories",
+           "pocdNftSymbol"
          ]
         d
     -- Assert multi-sig is correctly exercised.
@@ -102,14 +101,14 @@ mkPartialOrderConfigValidator =
     newDatum <- pletC $ pfromData $ pparseDatum' @PPartialOrderConfigDatum # getField @"datum" ownOutUtxoFs # getField @"datums" info
     newDatumFs <-
       pletFieldsC
-        @[ "pocdNftSymbol"
-         , "pocdMakerFeeFlat"
-         , "pocdMakerFeeRatio"
-         , "pocdTakerFee"
-         , "pocdMinDeposit"
-         , "pocdReqSignatories"
-         , "pocdSignatories"
-         , "pocdFeeAddr"
+        @[ "pocdNftSymbol",
+           "pocdMakerFeeFlat",
+           "pocdMakerFeeRatio",
+           "pocdTakerFee",
+           "pocdMinDeposit",
+           "pocdReqSignatories",
+           "pocdSignatories",
+           "pocdFeeAddr"
          ]
         newDatum
 
@@ -134,13 +133,12 @@ mkPartialOrderConfigValidator =
 
     -- Even though we have checked the format of fee address when parsing the datum, but to be sure of any edges, we assert that an output is made to this address as part of this transaction.
     newFeeAddr <- pletC $ getField @"pocdFeeAddr" newDatumFs
-    pguardC "not paid to fee address"
-      $
+    pguardC "not paid to fee address" $
       -- We are iterating over list of outputs twice (traversed earlier when finding continuing output) but performance is not a concern here.
-      pmatch (pfind # plam (\output -> pfield @"address" # output #== newFeeAddr) # outputs)
-      $ \case
-        PNothing -> pcon PFalse
-        PJust _ -> pcon PTrue
+      pmatch (pfind # plam (\output -> pfield @"address" # output #== newFeeAddr) # outputs) $
+        \case
+          PNothing -> pcon PFalse
+          PJust _ -> pcon PTrue
 
     -- @pocdMakerFeeFlat@, @pocdTakerFee@ and @pocdMinDeposit@ are all non-negative and not more than 1000 ADA.
     let lovelaceThreshold = 1000_000_000

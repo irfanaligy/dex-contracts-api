@@ -10,22 +10,22 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module GeniusYield.OnChain.DEX.PartialOrder.Types
-  ( PMaybePPOSIXTimeData (..)
-  , PPartialOrderFeeOutput (..)
-  , PPartialOrderContainedFee (..)
-  , PPartialOrderConfigDatum (..)
-  , PPartialOrderDatum (..)
-  , PPartialOrderAction (..)
-  , type PHasType
-  , type PartialOrderFeeOutputRec
-  , type PartialOrderContainedFeeRec
-  , type PartialOrderConfigRec
-  , type PartialOrderRec
-  )
-where
+module GeniusYield.OnChain.DEX.PartialOrder.Types (
+  PMaybePPOSIXTimeData (..),
+  PPartialOrderFeeOutput (..),
+  PPartialOrderContainedFee (..),
+  PPartialOrderConfigDatum (..),
+  PPartialOrderDatum (..),
+  PPartialOrderAction (..),
+  type PHasType,
+  type PartialOrderFeeOutputRec,
+  type PartialOrderContainedFeeRec,
+  type PartialOrderConfigRec,
+  type PartialOrderRec,
+) where
 
 import GHC.TypeLits
+import GeniusYield.OnChain.Plutarch.Types
 import Plutarch
 import Plutarch.Api.V1
 import Plutarch.DataRepr
@@ -33,8 +33,6 @@ import Plutarch.DataRepr.Internal
 import Plutarch.DataRepr.Internal.HList.Utils
 import Plutarch.Extra.RationalData
 import Plutarch.Prelude
-
-import GeniusYield.OnChain.Plutarch.Types
 
 {- $setup
 >>> :set -XDataKinds
@@ -46,14 +44,14 @@ type PHasType l a fs =
   (PUnLabel (IndexList (PLabelIndex l fs) fs) ~ a, KnownSymbol l, KnownNat (PLabelIndex l fs))
 
 type PartialOrderFeeOutputRec =
-  '[ "pofdMentionedFees" ':= PMap 'Unsorted PTxOutRef (PValue 'Sorted 'Positive)
-   , "pofdReservedValue" ':= PValue 'Sorted 'Positive
-   , "pofdSpentUTxORef" ':= PMaybeData PTxOutRef -- Here we don't require @PAsData@ wrapper to get @PTryFrom@ instance, i.e., we don't need to put @PMaybeData (PAsData PTxOutRef)@ unlike for @PPOSIXTime@.
+  '[ "pofdMentionedFees" ':= PMap 'Unsorted PTxOutRef (PValue 'Sorted 'Positive),
+     "pofdReservedValue" ':= PValue 'Sorted 'Positive,
+     "pofdSpentUTxORef" ':= PMaybeData PTxOutRef -- Here we don't require @PAsData@ wrapper to get @PTryFrom@ instance, i.e., we don't need to put @PMaybeData (PAsData PTxOutRef)@ unlike for @PPOSIXTime@.
    ]
 
 newtype PPartialOrderFeeOutput (s :: S)
   = PPartialOrderFeeOutput (Term s (PDataRecord PartialOrderFeeOutputRec))
-  deriving stock Generic
+  deriving stock (Generic)
   deriving anyclass (PDataFields, PEq, PIsData, PTryFrom PData, PlutusType)
 
 instance DerivePlutusType PPartialOrderFeeOutput where type DPTStrat _ = PlutusTypeData
@@ -61,14 +59,14 @@ instance DerivePlutusType PPartialOrderFeeOutput where type DPTStrat _ = PlutusT
 instance PTryFrom PData (PAsData PPartialOrderFeeOutput)
 
 type PartialOrderContainedFeeRec =
-  '[ "pocfLovelaces" ':= PInteger
-   , "pocfOfferedTokens" ':= PInteger
-   , "pocfAskedTokens" ':= PInteger
+  '[ "pocfLovelaces" ':= PInteger,
+     "pocfOfferedTokens" ':= PInteger,
+     "pocfAskedTokens" ':= PInteger
    ]
 
 newtype PPartialOrderContainedFee (s :: S)
   = PPartialOrderContainedFee (Term s (PDataRecord PartialOrderContainedFeeRec))
-  deriving stock Generic
+  deriving stock (Generic)
   deriving anyclass (PDataFields, PEq, PIsData, PPartialOrd, PTryFrom PData, PlutusType)
 
 instance DerivePlutusType PPartialOrderContainedFee where type DPTStrat _ = PlutusTypeData
@@ -97,43 +95,43 @@ instance Semigroup (Term s PPartialOrderContainedFee) where
   a <> b =
     pletFields @["pocfLovelaces", "pocfOfferedTokens", "pocfAskedTokens"] a $ \a' ->
       pletFields @["pocfLovelaces", "pocfOfferedTokens", "pocfAskedTokens"] b $ \b' ->
-        pcon
-          $ PPartialOrderContainedFee
-          $ pdcons @"pocfLovelaces"
-            # pdata (getField @"pocfLovelaces" a' + getField @"pocfLovelaces" b')
-            #$ pdcons @"pocfOfferedTokens"
-            # pdata (getField @"pocfOfferedTokens" a' + getField @"pocfOfferedTokens" b')
-            #$ pdcons @"pocfAskedTokens"
-            # pdata (getField @"pocfAskedTokens" a' + getField @"pocfAskedTokens" b')
-            #$ pdnil
+        pcon $
+          PPartialOrderContainedFee $
+            pdcons @"pocfLovelaces"
+              # pdata (getField @"pocfLovelaces" a' + getField @"pocfLovelaces" b')
+              #$ pdcons @"pocfOfferedTokens"
+              # pdata (getField @"pocfOfferedTokens" a' + getField @"pocfOfferedTokens" b')
+              #$ pdcons @"pocfAskedTokens"
+              # pdata (getField @"pocfAskedTokens" a' + getField @"pocfAskedTokens" b')
+              #$ pdnil
 
 instance Monoid (Term s PPartialOrderContainedFee) where
   mempty =
     plet (pdata 0) $ \z ->
-      pcon
-        $ PPartialOrderContainedFee
-        $ pdcons @"pocfLovelaces"
-          # z
-          #$ pdcons @"pocfOfferedTokens"
-          # z
-          #$ pdcons @"pocfAskedTokens"
-          # z
-          #$ pdnil
+      pcon $
+        PPartialOrderContainedFee $
+          pdcons @"pocfLovelaces"
+            # z
+            #$ pdcons @"pocfOfferedTokens"
+            # z
+            #$ pdcons @"pocfAskedTokens"
+            # z
+            #$ pdnil
 
 type PartialOrderConfigRec =
-  '[ "pocdSignatories" ':= PBuiltinList (PAsData PPubKeyHash)
-   , "pocdReqSignatories" ':= PInteger
-   , "pocdNftSymbol" ':= PCurrencySymbol
-   , "pocdFeeAddr" ':= PAddress
-   , "pocdMakerFeeFlat" ':= PInteger
-   , "pocdMakerFeeRatio" ':= PRationalData
-   , "pocdTakerFee" ':= PInteger
-   , "pocdMinDeposit" ':= PInteger
+  '[ "pocdSignatories" ':= PBuiltinList (PAsData PPubKeyHash),
+     "pocdReqSignatories" ':= PInteger,
+     "pocdNftSymbol" ':= PCurrencySymbol,
+     "pocdFeeAddr" ':= PAddress,
+     "pocdMakerFeeFlat" ':= PInteger,
+     "pocdMakerFeeRatio" ':= PRationalData,
+     "pocdTakerFee" ':= PInteger,
+     "pocdMinDeposit" ':= PInteger
    ]
 
 newtype PPartialOrderConfigDatum s
   = PPartialOrderConfigDatum (Term s (PDataRecord PartialOrderConfigRec))
-  deriving stock Generic
+  deriving stock (Generic)
   deriving anyclass (PDataFields, PEq, PIsData, PlutusType)
 
 instance DerivePlutusType PPartialOrderConfigDatum where type DPTStrat _ = PlutusTypeData
@@ -141,26 +139,26 @@ instance DerivePlutusType PPartialOrderConfigDatum where type DPTStrat _ = Plutu
 instance PTryFrom PData (PAsData PPartialOrderConfigDatum)
 
 type PartialOrderRec =
-  '[ "podOwnerKey" ':= PPubKeyHash
-   , "podOwnerAddr" ':= PAddress
-   , "podOfferedAsset" ':= PAssetClass
-   , "podOfferedOriginalAmount" ':= PInteger
-   , "podOfferedAmount" ':= PInteger
-   , "podAskedAsset" ':= PAssetClass
-   , "podPrice" ':= PRationalData
-   , "podNFT" ':= PTokenName
-   , "podStart" ':= PMaybePPOSIXTimeData
-   , "podEnd" ':= PMaybePPOSIXTimeData
-   , "podPartialFills" ':= PInteger
-   , "podMakerLovelaceFlatFee" ':= PInteger
-   , "podTakerLovelaceFlatFee" ':= PInteger
-   , "podContainedFee" ':= PPartialOrderContainedFee
-   , "podContainedPayment" ':= PInteger
+  '[ "podOwnerKey" ':= PPubKeyHash,
+     "podOwnerAddr" ':= PAddress,
+     "podOfferedAsset" ':= PAssetClass,
+     "podOfferedOriginalAmount" ':= PInteger,
+     "podOfferedAmount" ':= PInteger,
+     "podAskedAsset" ':= PAssetClass,
+     "podPrice" ':= PRationalData,
+     "podNFT" ':= PTokenName,
+     "podStart" ':= PMaybePPOSIXTimeData,
+     "podEnd" ':= PMaybePPOSIXTimeData,
+     "podPartialFills" ':= PInteger,
+     "podMakerLovelaceFlatFee" ':= PInteger,
+     "podTakerLovelaceFlatFee" ':= PInteger,
+     "podContainedFee" ':= PPartialOrderContainedFee,
+     "podContainedPayment" ':= PInteger
    ]
 
 newtype PPartialOrderDatum s
   = PPartialOrderDatum (Term s (PDataRecord PartialOrderRec))
-  deriving stock Generic
+  deriving stock (Generic)
   deriving anyclass (PDataFields, PEq, PIsData, PlutusType)
 
 instance DerivePlutusType PPartialOrderDatum where type DPTStrat _ = PlutusTypeData
@@ -171,7 +169,7 @@ instance PTryFrom PData (PAsData PPartialOrderDatum)
 data PMaybePPOSIXTimeData (s :: S)
   = PPDJust (Term s (PDataRecord '["_0" ':= PPOSIXTime]))
   | PPDNothing (Term s (PDataRecord '[]))
-  deriving stock Generic
+  deriving stock (Generic)
   deriving anyclass (PEq, PIsData, PShow, PlutusType)
 
 instance DerivePlutusType PMaybePPOSIXTimeData where type DPTStrat _ = PlutusTypeData
@@ -184,7 +182,7 @@ data PPartialOrderAction (s :: S)
   = PPartialCancel (Term s (PDataRecord '[]))
   | PPartialFill (Term s (PDataRecord '["_0" ':= PInteger]))
   | PCompleteFill (Term s (PDataRecord '[]))
-  deriving stock Generic
+  deriving stock (Generic)
   deriving anyclass (PEq, PIsData, PlutusType)
 
 instance DerivePlutusType PPartialOrderAction where type DPTStrat _ = PlutusTypeData

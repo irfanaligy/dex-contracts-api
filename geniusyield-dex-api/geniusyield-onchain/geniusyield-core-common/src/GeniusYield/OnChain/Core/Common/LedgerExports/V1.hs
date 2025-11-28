@@ -1,9 +1,8 @@
 {-# LANGUAGE CPP #-}
 
-module GeniusYield.OnChain.Core.Common.LedgerExports.V1
-  ( module LedgerV1
-  )
-where
+module GeniusYield.OnChain.Core.Common.LedgerExports.V1 (
+  module LedgerV1,
+) where
 
 #ifdef NEW_LEDGER_NAMESPACE
 import PlutusLedgerApi.V1 as LedgerV1

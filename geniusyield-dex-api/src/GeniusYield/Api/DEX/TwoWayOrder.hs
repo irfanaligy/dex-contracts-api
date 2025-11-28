@@ -6,40 +6,38 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module GeniusYield.Api.DEX.TwoWayOrder
-  ( AssetDetails (..)
-  , Offer (..)
-  , PriceDelta (..)
-  , TwoWays (..)
-  , TWORef (..)
-  , TwoWayOrderInfo (..)
-  , TWOrder (..)
-  , TWOIPrice (..)
+module GeniusYield.Api.DEX.TwoWayOrder (
+  AssetDetails (..),
+  Offer (..),
+  PriceDelta (..),
+  TwoWays (..),
+  TWORef (..),
+  TwoWayOrderInfo (..),
+  TWOrder (..),
+  TWOIPrice (..),
   -- New multi-order placement types/APIs
-  , TWPriceSpec (..)
-  , TWDirectionSpec (..)
-  , TWPlaceSpec (..)
-  , twoWayOrderAddr
-  , twoWayOrders
-  , twoWayOrdersWithTransformerPredicate
-  , cancelTwoWayOrders
-  , TWFillDirection (..)
-  , TWFillSpec (..)
-  , fillTwoWayOrders
-  , fillTwoWayAndLegacyPartialOrders
-  , getTwoWayOrderInfo
-  , placeTwoWayOrders
-  , resolveContinuingDeposit
-
-  , OrderAssets (..)
-  , OrderPrices (..)
-  , PriceVal (..)
-  , extractOrderAssets
-  , extractOrderPrices
-  , RefTWOCD
+  TWPriceSpec (..),
+  TWDirectionSpec (..),
+  TWPlaceSpec (..),
+  twoWayOrderAddr,
+  twoWayOrders,
+  twoWayOrdersWithTransformerPredicate,
+  cancelTwoWayOrders,
+  TWFillDirection (..),
+  TWFillSpec (..),
+  fillTwoWayOrders,
+  fillTwoWayAndLegacyPartialOrders,
+  getTwoWayOrderInfo,
+  placeTwoWayOrders,
+  resolveContinuingDeposit,
+  OrderAssets (..),
+  OrderPrices (..),
+  PriceVal (..),
+  extractOrderAssets,
+  extractOrderPrices,
+  RefTWOCD,
   -- ^ for use in smart-order-router
-  )
-where
+) where
 
 -- import Data.Map.Merge.Strict qualified as Map
 
@@ -52,9 +50,9 @@ import Data.Foldable (for_)
 import Data.Function ((&))
 import Data.List.NonEmpty (NonEmpty)
 import Data.List.NonEmpty qualified as NE
-import Data.Maybe (isJust, fromJust, mapMaybe)
 import Data.Map.Strict (type Map)
 import Data.Map.Strict qualified as Map
+import Data.Maybe (fromJust, isJust, mapMaybe)
 import Data.Ratio (denominator, numerator, (%))
 import Data.Strict.Tuple (Pair (..))
 import Data.Swagger qualified as Swagger
@@ -64,36 +62,48 @@ import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Traversable (for)
 import GHC.Generics (type Generic)
 import GHC.Stack (HasCallStack)
+import GeniusYield.Api.DEX.PartialOrder (PORefs, fillMultiplePartialOrders)
+import GeniusYield.Api.DEX.PartialOrderConfig (RefPocds)
+import GeniusYield.Api.DEX.TwoWayOrderConfig (RefTWOCD (..), TWORef (..), fetchTwoWayOrderConfig)
+import GeniusYield.Api.DEX.Utils (stampCancel, stampFilled, stampPlaced)
+import GeniusYield.Api.Oracle (OracleCertificate (..), Price (..))
+import GeniusYield.Api.Types
+import GeniusYield.Crypto (SignatureOffchain (..))
 import GeniusYield.HTTP.Errors
 import GeniusYield.Imports (iwither)
-import GeniusYield.TxBuilder
-  ( GYConversionError (..)
-  , GYTxMonadException (..)
-  , GYTxQueryMonad
-  , GYTxSkeleton
-  , addressFromPlutus'
-  , addressToPubKeyHash'
-  , enclosingSlotFromTime'
-  , gyLogDebug'
-  , isInvalidAfter
-  , mustBeSignedBy
-  , mustHaveInput
-  , mustHaveOutput
-  , mustHaveRefInput
-  , mustHaveTxMetadata
-  , mustHaveWithdrawal
-  , mustMint
-  , networkId
-  , pubKeyHashFromPlutus'
-  , scriptAddress
-  , someUTxOWithoutRefScript
-  , throwAppError
-  , tokenNameFromPlutus'
-  , utxoAtTxOutRefWithDatum'
-  , utxoDatumPureWithOriginalDatum'
-  , utxosAtPaymentCredentialWithDatums
-  , utxosDatumsPureWithOriginalDatum
-  )
+import GeniusYield.Scripts.DEX.NFT
+import GeniusYield.Scripts.DEX.TwoWayOrder
+import GeniusYield.Scripts.DEX.TwoWayOrder.Utils (mkTwoWayOrderDeltaDatumOneWay, mkTwoWayOrderDeltaDatumTwoWay, mkTwoWayOrderFixedDatum, mkTwoWayOrderFixedDatumTwoWay)
+import GeniusYield.Scripts.DEX.TwoWayOrderConfig
+import GeniusYield.TxBuilder (
+  GYConversionError (..),
+  GYTxMonadException (..),
+  GYTxQueryMonad,
+  GYTxSkeleton,
+  addressFromPlutus',
+  addressToPubKeyHash',
+  enclosingSlotFromTime',
+  gyLogDebug',
+  isInvalidAfter,
+  mustBeSignedBy,
+  mustHaveInput,
+  mustHaveOutput,
+  mustHaveRefInput,
+  mustHaveTxMetadata,
+  mustHaveWithdrawal,
+  mustMint,
+  networkId,
+  pubKeyHashFromPlutus',
+  scriptAddress,
+  someUTxOWithoutRefScript,
+  throwAppError,
+  tokenNameFromPlutus',
+  utxoAtTxOutRefWithDatum',
+  utxoDatumPureWithOriginalDatum',
+  utxosAtPaymentCredentialWithDatums,
+  utxosDatumsPureWithOriginalDatum,
+ )
+import GeniusYield.TxBuilder.Upgrade (upgradeTxSkeleton)
 import GeniusYield.Types
 import Network.HTTP.Types.Status
 import PlutusLedgerApi.Data.V1
@@ -103,19 +113,6 @@ import PlutusTx qualified as PlutusTx
 import PlutusTx.Builtins qualified as Builtins
 import PlutusTx.Ratio qualified as Tx
 import Prelude hiding (reverse)
-
-import GeniusYield.Api.DEX.PartialOrder (PORefs, fillMultiplePartialOrders)
-import GeniusYield.Api.DEX.PartialOrderConfig (RefPocds)
-import GeniusYield.Api.DEX.TwoWayOrderConfig (RefTWOCD (..), TWORef (..), fetchTwoWayOrderConfig)
-import GeniusYield.Api.DEX.Utils (stampCancel, stampFilled, stampPlaced)
-import GeniusYield.Api.Oracle (OracleCertificate (..), Price (..))
-import GeniusYield.Api.Types
-import GeniusYield.Crypto (SignatureOffchain (..))
-import GeniusYield.Scripts.DEX.NFT
-import GeniusYield.Scripts.DEX.TwoWayOrder
-import GeniusYield.Scripts.DEX.TwoWayOrder.Utils (mkTwoWayOrderDeltaDatumOneWay, mkTwoWayOrderDeltaDatumTwoWay, mkTwoWayOrderFixedDatum, mkTwoWayOrderFixedDatumTwoWay)
-import GeniusYield.Scripts.DEX.TwoWayOrderConfig
-import GeniusYield.TxBuilder.Upgrade (upgradeTxSkeleton)
 
 {-
 -- | Exceptions raised in the 'get two way orders' endpoint.
@@ -141,23 +138,23 @@ instance IsGYApiError GetOrderInfoException where
 -}
 
 data TwoWayOrderInfo = TwoWayOrderInfo
-  { twoiRef :: !GYTxOutRef
-  , -- \*** --
-    twoiOwnerCredentials :: ![GYPaymentCredential]
-  , twoiOwnerAddr :: !GYAddress
-  , twoiNFT :: !GYTokenName
-  , twoiOffer :: !(TWOIPrice TWOrder)
-  , twoiStart :: !(Maybe GYTime)
-  , twoiEnd :: !(Maybe GYTime)
-  , twoiTakerLovelaceFlatFee :: !Natural
-  , twoiTakerFeeRatio :: !GYRational
-  , twoiMakerFeeRatio :: !GYRational
-  , twoiOracleFreshnessSeconds :: !Natural
-  , -- \*** --
-    twoiUTxOValue :: !GYValue
-  , twoiUTxOAddr :: !GYAddress
-  , twoiNFTCS :: !GYMintingPolicyId
-  , twoiRawDatum :: !GYDatum
+  { twoiRef :: !GYTxOutRef,
+    -- \*** --
+    twoiOwnerCredentials :: ![GYPaymentCredential],
+    twoiOwnerAddr :: !GYAddress,
+    twoiNFT :: !GYTokenName,
+    twoiOffer :: !(TWOIPrice TWOrder),
+    twoiStart :: !(Maybe GYTime),
+    twoiEnd :: !(Maybe GYTime),
+    twoiTakerLovelaceFlatFee :: !Natural,
+    twoiTakerFeeRatio :: !GYRational,
+    twoiMakerFeeRatio :: !GYRational,
+    twoiOracleFreshnessSeconds :: !Natural,
+    -- \*** --
+    twoiUTxOValue :: !GYValue,
+    twoiUTxOAddr :: !GYAddress,
+    twoiNFTCS :: !GYMintingPolicyId,
+    twoiRawDatum :: !GYDatum
   }
   deriving stock (Generic, Show, Eq)
 
@@ -196,8 +193,8 @@ data TWOIPrice of'
   = TWOIPriceFixed !(of' GYRational)
   | -- | Price given as a delta to oracle price.
     TWOIPriceDynamic
-      { twoioPriceDelta :: !(of' PriceDelta)
-      , twoioOracleKey :: !GYPaymentVerificationKey
+      { twoioPriceDelta :: !(of' PriceDelta),
+        twoioOracleKey :: !GYPaymentVerificationKey
       }
 
 deriving stock instance (Show (of' GYRational), Show (of' PriceDelta)) => Show (TWOIPrice of')
@@ -221,75 +218,75 @@ deriving anyclass instance
 --------------------------------------------------------------------------------
 
 data OracleRedeemerPayload = OracleRedeemerPayload
-  { orpPrice :: !GYRational
-  , orpBaseAsset :: !GYAssetClass
-  , orpQuoteAsset :: !GYAssetClass
-  , orpTimestampMs :: !Integer
-  , orpSignature :: !SignatureOffchain
+  { orpPrice :: !GYRational,
+    orpBaseAsset :: !GYAssetClass,
+    orpQuoteAsset :: !GYAssetClass,
+    orpTimestampMs :: !Integer,
+    orpSignature :: !SignatureOffchain
   }
   deriving stock (Eq, Show)
 
 data PricingModel m = PricingModel
-  { pmStraight :: Natural -> m Natural
-  , pmReverse :: Natural -> m Natural
-  , pmRedeemerPayload :: Maybe OracleRedeemerPayload
+  { pmStraight :: Natural -> m Natural,
+    pmReverse :: Natural -> m Natural,
+    pmRedeemerPayload :: Maybe OracleRedeemerPayload
   }
 
 oraclePayloadFromCertificate :: OracleCertificate -> OracleRedeemerPayload
 oraclePayloadFromCertificate OracleCertificate {ocPrice = Price price, ocBaseAsset, ocQuoteAsset, ocTimestamp, ocSignature} =
   OracleRedeemerPayload
-    { orpPrice = rationalFromGHC price
-    , orpBaseAsset = ocBaseAsset
-    , orpQuoteAsset = ocQuoteAsset
-    , orpTimestampMs = floor (utcTimeToPOSIXSeconds ocTimestamp * 1000)
-    , orpSignature = ocSignature
+    { orpPrice = rationalFromGHC price,
+      orpBaseAsset = ocBaseAsset,
+      orpQuoteAsset = ocQuoteAsset,
+      orpTimestampMs = floor (utcTimeToPOSIXSeconds ocTimestamp * 1000),
+      orpSignature = ocSignature
     }
 
 oracleRedeemerData :: Map GYTokenName OracleRedeemerPayload -> PlutusTx.Data
 oracleRedeemerData mp =
   let entries = fmap encodeEntry (Map.toList mp)
-  in PlutusTx.Constr 0 [PlutusTx.List entries]
-  where
-    encodeEntry :: (GYTokenName, OracleRedeemerPayload) -> PlutusTx.Data
-    encodeEntry (tn, payload) =
-      PlutusTx.List
-        [ PlutusTx.toData (tokenNameToPlutus tn)
-        , oracleFillDetailsData payload
-        ]
+   in PlutusTx.Constr 0 [PlutusTx.List entries]
+ where
+  encodeEntry :: (GYTokenName, OracleRedeemerPayload) -> PlutusTx.Data
+  encodeEntry (tn, payload) =
+    PlutusTx.List
+      [ PlutusTx.toData (tokenNameToPlutus tn),
+        oracleFillDetailsData payload
+      ]
 
-    oracleFillDetailsData :: OracleRedeemerPayload -> PlutusTx.Data
-    oracleFillDetailsData OracleRedeemerPayload {..} =
-      let
-        priceTimestamp =
-          PlutusTx.Constr
-            0
-            [ assetClassData orpBaseAsset
-            , assetClassData orpQuoteAsset
-            , rationalData orpPrice
-            , PlutusTx.I orpTimestampMs
-            ]
-        signatureData = PlutusTx.toData (Builtins.toBuiltin (getSignatureOffchain orpSignature))
-      in
-        PlutusTx.Constr 0 [signatureData, priceTimestamp]
+  oracleFillDetailsData :: OracleRedeemerPayload -> PlutusTx.Data
+  oracleFillDetailsData OracleRedeemerPayload {..} =
+    let
+      priceTimestamp =
+        PlutusTx.Constr
+          0
+          [ assetClassData orpBaseAsset,
+            assetClassData orpQuoteAsset,
+            rationalData orpPrice,
+            PlutusTx.I orpTimestampMs
+          ]
+      signatureData = PlutusTx.toData (Builtins.toBuiltin (getSignatureOffchain orpSignature))
+     in
+      PlutusTx.Constr 0 [signatureData, priceTimestamp]
 
-    rationalData :: GYRational -> PlutusTx.Data
-    rationalData r =
-      let
-        rat = rationalToGHC r
-        num = numerator rat
-        den = denominator rat
-      in
-        PlutusTx.Constr 0 [PlutusTx.I num, PlutusTx.I den]
+  rationalData :: GYRational -> PlutusTx.Data
+  rationalData r =
+    let
+      rat = rationalToGHC r
+      num = numerator rat
+      den = denominator rat
+     in
+      PlutusTx.Constr 0 [PlutusTx.I num, PlutusTx.I den]
 
-    assetClassData :: GYAssetClass -> PlutusTx.Data
-    assetClassData ac =
-      case assetClassToPlutus ac of
-        Ledger.AssetClass (Ledger.CurrencySymbol policy, Ledger.TokenName assetName) ->
-          PlutusTx.Constr
-            0
-            [ PlutusTx.B (Builtins.fromBuiltin policy)
-            , PlutusTx.B (Builtins.fromBuiltin assetName)
-            ]
+  assetClassData :: GYAssetClass -> PlutusTx.Data
+  assetClassData ac =
+    case assetClassToPlutus ac of
+      Ledger.AssetClass (Ledger.CurrencySymbol policy, Ledger.TokenName assetName) ->
+        PlutusTx.Constr
+          0
+          [ PlutusTx.B (Builtins.fromBuiltin policy),
+            PlutusTx.B (Builtins.fromBuiltin assetName)
+          ]
 
 applyPriceDelta :: GYRational -> PriceDelta -> GYRational
 applyPriceDelta base PriceDelta {offset, spread} =
@@ -298,9 +295,9 @@ applyPriceDelta base PriceDelta {offset, spread} =
 ceilingPriceProduct :: Text -> GYRational -> Natural -> Either Text Natural
 ceilingPriceProduct context price amt =
   let result = ceiling (rationalToGHC price * toRational amt)
-  in if result < 0
-       then Left $ context <> ": negative payment derived"
-       else Right (fromInteger result)
+   in if result < 0
+        then Left $ context <> ": negative payment derived"
+        else Right (fromInteger result)
 
 --------------------------------------------------------------------------------
 -- Placement specifications (master API)
@@ -309,52 +306,52 @@ ceilingPriceProduct context price amt =
 -- | Price specification for placing orders via the master function.
 data TWPriceSpec
   = TWPriceFixed
-      { twpsStraight :: !GYRational
-      -- ^ price for A->B
-      , twpsReverse :: !(Maybe GYRational)
-      -- ^ optional price for B->A (two-way only). If 'Nothing', uses reciprocal of 'twpsStraight'.
+      { -- | price for A->B
+        twpsStraight :: !GYRational,
+        -- | optional price for B->A (two-way only). If 'Nothing', uses reciprocal of 'twpsStraight'.
+        twpsReverse :: !(Maybe GYRational)
       }
   | TWPriceRelative
-      { twpsOracleVKey :: !GYPaymentVerificationKey
-      , twpsStraightDelta :: !PriceDelta
-      -- ^ delta for straight A->B
-      , twpsReverseDelta :: !(Maybe PriceDelta)
-      -- ^ optional delta for reverse B->A; if 'Nothing', uses straight delta.
+      { twpsOracleVKey :: !GYPaymentVerificationKey,
+        -- | delta for straight A->B
+        twpsStraightDelta :: !PriceDelta,
+        -- | optional delta for reverse B->A; if 'Nothing', uses straight delta.
+        twpsReverseDelta :: !(Maybe PriceDelta)
       }
   deriving stock (Eq, Generic, Show)
 
 -- | Direction/deposit specification (one-way vs true two-way).
 data TWDirectionSpec
   = TWOneWay
-      { twdOffer :: !(Natural, GYAssetClass)
-      -- ^ amount and offered asset (A)
-      , twdAsk :: !GYAssetClass
-      -- ^ asked asset (B)
-      , twdAddOfferedFee :: !Natural
-      -- ^ additional maker fee in offered tokens (A). Use 0 for default.
+      { -- | amount and offered asset (A)
+        twdOffer :: !(Natural, GYAssetClass),
+        -- | asked asset (B)
+        twdAsk :: !GYAssetClass,
+        -- | additional maker fee in offered tokens (A). Use 0 for default.
+        twdAddOfferedFee :: !Natural
       }
   | TWTwoway
-      { twdOfferA :: !(Natural, GYAssetClass)
-      , twdOfferB :: !(Natural, GYAssetClass)
+      { twdOfferA :: !(Natural, GYAssetClass),
+        twdOfferB :: !(Natural, GYAssetClass)
       }
   deriving stock (Eq, Generic, Show)
 
 -- | Complete placement spec for a single TWO order.
 data TWPlaceSpec = TWPlaceSpec
-  { twpsOwner :: !GYAddress
-  , twpsDirection :: !TWDirectionSpec
-  , twpsPriceSpec :: !TWPriceSpec
-  , twpsStart :: !(Maybe GYTime)
-  , twpsEnd :: !(Maybe GYTime)
-  , twpsAddLov :: !Natural
-  -- ^ additional lovelace to deposit (maker flat top-up)
-  , twpsStakeCred :: !(Maybe GYStakeCredential)
+  { twpsOwner :: !GYAddress,
+    twpsDirection :: !TWDirectionSpec,
+    twpsPriceSpec :: !TWPriceSpec,
+    twpsStart :: !(Maybe GYTime),
+    twpsEnd :: !(Maybe GYTime),
+    -- | additional lovelace to deposit (maker flat top-up)
+    twpsAddLov :: !Natural,
+    twpsStakeCred :: !(Maybe GYStakeCredential)
   }
   deriving stock (Eq, Generic, Show)
 
 data Offer price = Offer
-  { amount :: !Natural
-  , price :: !price
+  { amount :: !Natural,
+    price :: !price
   }
 
 deriving stock instance Show p => Show (Offer p)
@@ -373,8 +370,8 @@ deriving anyclass instance (Aeson.ToJSON p, Generic p) => Aeson.ToJSON (Offer p)
 -- set `reverse` to some non-`None` value such that it is detrimental to fill
 -- it in reverse direction.
 data TwoWays offer = TwoWays
-  { straight :: !(AssetDetails offer)
-  , reverse :: !(AssetDetails (Maybe offer))
+  { straight :: !(AssetDetails offer),
+    reverse :: !(AssetDetails (Maybe offer))
   }
 
 deriving stock instance Show o => Show (TwoWays o)
@@ -393,18 +390,18 @@ deriving anyclass instance (Aeson.ToJSON o, Generic o) => Aeson.ToJSON (TwoWays 
 Actual price is `o * (1 + spread) + offset` where `o` is the oracle price.
 -}
 data PriceDelta = PriceDelta
-  { offset :: !GYRational
-  , spread :: !GYRational
+  { offset :: !GYRational,
+    spread :: !GYRational
   }
   deriving stock (Eq, Generic, Show)
   deriving anyclass (Aeson.ToJSON, Swagger.ToSchema)
 
 -- | Details of an asset involved in an order.
 data AssetDetails offer = AssetDetails
-  { asset :: !GYAssetClass
-  -- ^ Asset class.
-  , offer :: !offer
-  -- ^ Available offer for this asset.
+  { -- | Asset class.
+    asset :: !GYAssetClass,
+    -- | Available offer for this asset.
+    offer :: !offer
   }
 
 deriving stock instance Show p => Show (AssetDetails p)
@@ -437,20 +434,20 @@ twoWayOrders
 twoWayOrders twor = do
   addr <- twoWayOrderAddr twor.tworRefNft
   payCred <-
-    maybe (throwAppError $ someBackendError "two-way order script address missing payment credential") pure
-      $ addressToPaymentCredential addr
+    maybe (throwAppError $ someBackendError "two-way order script address missing payment credential") pure $
+      addressToPaymentCredential addr
   utxosWithDatums <- utxosAtPaymentCredentialWithDatums payCred Nothing
-  twoWayOrderNftPolicyId twor.tworRefNft & mkTWOrderInfo & iwither
-    $ utxosDatumsPureWithOriginalDatum utxosWithDatums
-  where
-    mkTWOrderInfo
-      :: GYMintingPolicyId
-      -> GYTxOutRef
-      -> (GYAddress, GYValue, TwoWayOrderDatum, GYDatum)
-      -> m (Maybe TwoWayOrderInfo)
-    mkTWOrderInfo policyId orderRef tuple =
-      pure empty & const & catchError do
-        Just <$> makeTwoWayOrderInfo policyId orderRef tuple
+  twoWayOrderNftPolicyId twor.tworRefNft & mkTWOrderInfo & iwither $
+    utxosDatumsPureWithOriginalDatum utxosWithDatums
+ where
+  mkTWOrderInfo
+    :: GYMintingPolicyId
+    -> GYTxOutRef
+    -> (GYAddress, GYValue, TwoWayOrderDatum, GYDatum)
+    -> m (Maybe TwoWayOrderInfo)
+  mkTWOrderInfo policyId orderRef tuple =
+    pure empty & const & catchError do
+      Just <$> makeTwoWayOrderInfo policyId orderRef tuple
 
 twoWayOrdersWithTransformerPredicate
   :: GYApiQueryMonad m
@@ -546,8 +543,8 @@ makeTwoWayOrderInfo policyId orderRef (utxoAddr, v, twoDatum, origDatum) = do
       key <-
         signingKeyFromRawBytes k & do
           pure . paymentVerificationKey & maybe do
-            throwError . GYConversionException . GYLedgerToCardanoError
-              $ DeserialiseRawBytesError "Malformed VerificationKey"
+            throwError . GYConversionException . GYLedgerToCardanoError $
+              DeserialiseRawBytesError "Malformed VerificationKey"
       sa <-
         assetClassFromPlutus (fst strAsset) & do
           pure . AssetDetails & either do
@@ -564,10 +561,10 @@ makeTwoWayOrderInfo policyId orderRef (utxoAddr, v, twoDatum, origDatum) = do
         offset <- rationalFromPlutus' $ fst <$> r'
         spread <- rationalFromPlutus' $ snd <$> r'
         pure PriceDelta {..}
-      pure
-        $ TWOIPriceDynamic
-          { twoioPriceDelta = TWOrder (TwoWays strDetails revDetails)
-          , twoioOracleKey = key
+      pure $
+        TWOIPriceDynamic
+          { twoioPriceDelta = TWOrder (TwoWays strDetails revDetails),
+            twoioOracleKey = key
           }
   twoiTakerFeeRatio <- rationalFromPlutus' takerFeeRatio
   twoiMakerFeeRatio <- rationalFromPlutus' makerFeeRatio
@@ -586,61 +583,61 @@ makeTwoWayOrderInfo policyId orderRef (utxoAddr, v, twoDatum, origDatum) = do
     twoiNFTCS = policyId
     twoiRawDatum = origDatum
   pure TwoWayOrderInfo {..}
-  where
-    deltaToPlutus
-      :: BPgeniusyield_dex_v2_types_order_PriceDelta
-      -> Maybe (Tx.Rational, Tx.Rational)
-    deltaToPlutus = \case
-      BPgeniusyield_dex_v2_types_order_PriceDelta0PriceDelta
-        (rationalToPlutus' -> offset)
-        (rationalToPlutus' -> spread) -> do
-          o <- offset
-          s <- spread
-          pure (o, s)
-    rationalFromPlutus' :: Maybe Tx.Rational -> m GYRational
-    rationalFromPlutus' =
-      pure . rationalFromPlutus & maybe do
-        throwError . GYConversionException . GYLedgerToCardanoError
-          $ DeserialiseRawBytesError "Malformed Rational"
-    rationalToPlutus' :: BPgeniusyield_dex_v2_types_rational_Rational -> Maybe Tx.Rational
-    rationalToPlutus' = \case
-      BPgeniusyield_dex_v2_types_rational_Rational0Rational n d -> Tx.ratio n d
-    posixTimeFromTimestamp :: BPOption_Int -> Maybe POSIXTime
-    posixTimeFromTimestamp = \case
-      BPOption_Int1None -> Nothing
-      BPOption_Int0Some time -> Just $ POSIXTime time
-    credentialFromBPPayment :: BPPaymentCredential -> Credential
-    credentialFromBPPayment = \case
-      BPPaymentCredential0VerificationKey vkh ->
-        PubKeyCredential $ PubKeyHash vkh
-      BPPaymentCredential1Script sh ->
-        ScriptCredential $ ScriptHash sh
-    credentialFromCardanoAddress :: BPcardano_address_Credential -> Credential
-    credentialFromCardanoAddress = \case
-      BPcardano_address_Credential0VerificationKey vkh ->
-        PubKeyCredential $ PubKeyHash vkh
-      BPcardano_address_Credential1Script sh ->
-        ScriptCredential $ ScriptHash sh
-    credentialsFromMultisig
-      :: BPgeniusyield_dex_v2_types_multisig_MultisigScript -> [Credential]
-    credentialsFromMultisig = \case
-      BPgeniusyield_dex_v2_types_multisig_MultisigScript0MultisigScript
-        verificationKeyHashes
-        scriptHashes ->
-          do PubKeyCredential . PubKeyHash <$> verificationKeyHashes
-            <> do ScriptCredential . ScriptHash <$> scriptHashes
-    assetToPlutus
-      :: BPgeniusyield_dex_v2_types_order_AssetDetails -> (AssetClass, Natural)
-    assetToPlutus = \case
-      BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails
-        ( \case
-            BPgeniusyield_dex_v2_types_assets_AssetClass0AssetClass
-              policy
-              assetName ->
-                AssetClass (Ledger.CurrencySymbol policy, Ledger.TokenName assetName) ->
-            asset
-          )
-        (fromInteger -> amount) -> (asset, amount)
+ where
+  deltaToPlutus
+    :: BPgeniusyield_dex_v2_types_order_PriceDelta
+    -> Maybe (Tx.Rational, Tx.Rational)
+  deltaToPlutus = \case
+    BPgeniusyield_dex_v2_types_order_PriceDelta0PriceDelta
+      (rationalToPlutus' -> offset)
+      (rationalToPlutus' -> spread) -> do
+        o <- offset
+        s <- spread
+        pure (o, s)
+  rationalFromPlutus' :: Maybe Tx.Rational -> m GYRational
+  rationalFromPlutus' =
+    pure . rationalFromPlutus & maybe do
+      throwError . GYConversionException . GYLedgerToCardanoError $
+        DeserialiseRawBytesError "Malformed Rational"
+  rationalToPlutus' :: BPgeniusyield_dex_v2_types_rational_Rational -> Maybe Tx.Rational
+  rationalToPlutus' = \case
+    BPgeniusyield_dex_v2_types_rational_Rational0Rational n d -> Tx.ratio n d
+  posixTimeFromTimestamp :: BPOption_Int -> Maybe POSIXTime
+  posixTimeFromTimestamp = \case
+    BPOption_Int1None -> Nothing
+    BPOption_Int0Some time -> Just $ POSIXTime time
+  credentialFromBPPayment :: BPPaymentCredential -> Credential
+  credentialFromBPPayment = \case
+    BPPaymentCredential0VerificationKey vkh ->
+      PubKeyCredential $ PubKeyHash vkh
+    BPPaymentCredential1Script sh ->
+      ScriptCredential $ ScriptHash sh
+  credentialFromCardanoAddress :: BPcardano_address_Credential -> Credential
+  credentialFromCardanoAddress = \case
+    BPcardano_address_Credential0VerificationKey vkh ->
+      PubKeyCredential $ PubKeyHash vkh
+    BPcardano_address_Credential1Script sh ->
+      ScriptCredential $ ScriptHash sh
+  credentialsFromMultisig
+    :: BPgeniusyield_dex_v2_types_multisig_MultisigScript -> [Credential]
+  credentialsFromMultisig = \case
+    BPgeniusyield_dex_v2_types_multisig_MultisigScript0MultisigScript
+      verificationKeyHashes
+      scriptHashes ->
+        do PubKeyCredential . PubKeyHash <$> verificationKeyHashes
+          <> do ScriptCredential . ScriptHash <$> scriptHashes
+  assetToPlutus
+    :: BPgeniusyield_dex_v2_types_order_AssetDetails -> (AssetClass, Natural)
+  assetToPlutus = \case
+    BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails
+      ( \case
+          BPgeniusyield_dex_v2_types_assets_AssetClass0AssetClass
+            policy
+            assetName ->
+              AssetClass (Ledger.CurrencySymbol policy, Ledger.TokenName assetName) ->
+          asset
+        )
+      (fromInteger -> amount) -> (asset, amount)
 
 -- spend tx hash into 'twoWayOrderMintValidator'
 
@@ -697,21 +694,21 @@ fillTwoWayOrders twors specs (RefTWOCD (cfgRef :!: twocd)) = do
       | otherwise =
           mustHaveOutput
             GYTxOut
-              { gyTxOutAddress = twocd.twocdFeeAddr
-              , gyTxOutValue = feeValue
-              , gyTxOutDatum = Just (datumFromPlutusData $ scriptPlutusHash mintScript, GYTxOutUseInlineDatum)
-              , gyTxOutRefS = Nothing
+              { gyTxOutAddress = twocd.twocdFeeAddr,
+                gyTxOutValue = feeValue,
+                gyTxOutDatum = Just (datumFromPlutusData $ scriptPlutusHash mintScript, GYTxOutUseInlineDatum),
+                gyTxOutRefS = Nothing
               }
 
     fillStakeRedeemer =
-      redeemerFromPlutus'
-        $ PlutusTx.dataToBuiltinData (oracleRedeemerData oracleMap)
+      redeemerFromPlutus' $
+        PlutusTx.dataToBuiltinData (oracleRedeemerData oracleMap)
     fillWithdrawal =
       mustHaveWithdrawal
         GYTxWdrl
-          { gyTxWdrlStakeAddress = fillStakeAddress
-          , gyTxWdrlAmount = 0
-          , gyTxWdrlWitness =
+          { gyTxWdrlStakeAddress = fillStakeAddress,
+            gyTxWdrlAmount = 0,
+            gyTxWdrlWitness =
               GYTxWdrlWitnessScript
                 (GYStakeValReference twors.tworFillRef $ twoWayOrderFillValidator twors.tworRefNft)
                 fillStakeRedeemer
@@ -756,38 +753,38 @@ fillTwoWayAndLegacyPartialOrders twor specs refTwo pors partials mRefPocd = do
   pure $ twoWaySkeleton <> partialSkeletonV3
 
 type FillAccumulator =
-  ( GYTxSkeleton PlutusV3
-  , GYValue -- taker fee accumulator (can include negatives)
-  , GYValue -- maker fee accumulator
-  , Integer
-  , Bool
-  , Map.Map GYTokenName OracleRedeemerPayload
-  , Maybe GYSlot
+  ( GYTxSkeleton PlutusV3,
+    GYValue, -- taker fee accumulator (can include negatives)
+    GYValue, -- maker fee accumulator
+    Integer,
+    Bool,
+    Map.Map GYTokenName OracleRedeemerPayload,
+    Maybe GYSlot
   )
 
 data FillState = FillState
-  { fsInfo :: TwoWayOrderInfo
-  , fsOrderDatum :: BPgeniusyield_dex_v2_types_order_OrderDatum
-  , fsStraightAsset :: GYAssetClass
-  , fsReverseAsset :: GYAssetClass
-  , fsInitialStraight :: Integer
-  , fsInitialReverse :: Integer
-  , fsCurrentStraight :: Integer
-  , fsCurrentReverse :: Integer
-  , fsSkeleton :: GYTxSkeleton PlutusV3
-  , fsFlatFee :: Integer
-  , fsConsumed :: Bool
-  , fsOraclePayload :: Maybe OracleRedeemerPayload
-  , fsDeadline :: Maybe GYSlot
-  , fsTakerFeeValue :: GYValue
-  , fsMakerFeeValue :: GYValue
+  { fsInfo :: TwoWayOrderInfo,
+    fsOrderDatum :: BPgeniusyield_dex_v2_types_order_OrderDatum,
+    fsStraightAsset :: GYAssetClass,
+    fsReverseAsset :: GYAssetClass,
+    fsInitialStraight :: Integer,
+    fsInitialReverse :: Integer,
+    fsCurrentStraight :: Integer,
+    fsCurrentReverse :: Integer,
+    fsSkeleton :: GYTxSkeleton PlutusV3,
+    fsFlatFee :: Integer,
+    fsConsumed :: Bool,
+    fsOraclePayload :: Maybe OracleRedeemerPayload,
+    fsDeadline :: Maybe GYSlot,
+    fsTakerFeeValue :: GYValue,
+    fsMakerFeeValue :: GYValue
   }
 
 data OrderAssets = OrderAssets
-  { oaStraightAsset :: !GYAssetClass
-  , oaStraightAmount :: !Integer
-  , oaReverseAsset :: !GYAssetClass
-  , oaReverseAmount :: !Integer
+  { oaStraightAsset :: !GYAssetClass,
+    oaStraightAmount :: !Integer,
+    oaReverseAsset :: !GYAssetClass,
+    oaReverseAmount :: !Integer
   }
 
 extractOrderAssets :: TwoWayOrderInfo -> OrderAssets
@@ -797,49 +794,47 @@ extractOrderAssets TwoWayOrderInfo {twoiOffer} =
       orderAssetsFromTwoWays twoWays
     TWOIPriceDynamic {twoioPriceDelta = TWOrder twoWays} ->
       orderAssetsFromTwoWays twoWays
-  where
-    orderAssetsFromTwoWays
-      TwoWays
-        { straight = AssetDetails {asset = straightAsset, offer = straightOffer}
-        , reverse = AssetDetails {asset = reverseAsset, offer = reverseOffer}
-        } =
-        OrderAssets
-          { oaStraightAsset = straightAsset
-          , oaStraightAmount = toInteger straightOffer.amount
-          , oaReverseAsset = reverseAsset
-          , oaReverseAmount = maybe 0 (\offer -> toInteger offer.amount) reverseOffer
-          }
+ where
+  orderAssetsFromTwoWays
+    TwoWays
+      { straight = AssetDetails {asset = straightAsset, offer = straightOffer},
+        reverse = AssetDetails {asset = reverseAsset, offer = reverseOffer}
+      } =
+      OrderAssets
+        { oaStraightAsset = straightAsset,
+          oaStraightAmount = toInteger straightOffer.amount,
+          oaReverseAsset = reverseAsset,
+          oaReverseAmount = maybe 0 (\offer -> toInteger offer.amount) reverseOffer
+        }
 
 data PriceVal = FixedVal GYRational | DynamicVal PriceDelta deriving (Eq, Show)
 
-data OrderPrices = OrderPrices { opStraightPrice :: PriceVal , opReversePrice  :: Maybe PriceVal }
+data OrderPrices = OrderPrices {opStraightPrice :: PriceVal, opReversePrice :: Maybe PriceVal}
 
 extractOrderPrices :: TwoWayOrderInfo -> OrderPrices
 extractOrderPrices TwoWayOrderInfo {twoiOffer} =
   case twoiOffer of
     TWOIPriceFixed (TWOrder twoWays) ->
-        case twoWays of
-          TwoWays { straight = AssetDetails _ straightOffer, reverse = AssetDetails _ mReverseOffer } ->
-            OrderPrices
-            {
-              opStraightPrice = FixedVal (straightOffer.price)
-            , opReversePrice  = if isJust mReverseOffer then Just (FixedVal (fromJust mReverseOffer).price) else Nothing
+      case twoWays of
+        TwoWays {straight = AssetDetails _ straightOffer, reverse = AssetDetails _ mReverseOffer} ->
+          OrderPrices
+            { opStraightPrice = FixedVal (straightOffer.price),
+              opReversePrice = if isJust mReverseOffer then Just (FixedVal (fromJust mReverseOffer).price) else Nothing
             }
     TWOIPriceDynamic {twoioPriceDelta = TWOrder twoWays} ->
       case twoWays of
-          TwoWays { straight = AssetDetails _ straightOffer , reverse = AssetDetails _ mReverseOffer } ->
-            OrderPrices
-            {
-              opStraightPrice = DynamicVal (straightOffer.price)
-            , opReversePrice  = if isJust mReverseOffer then Just (DynamicVal (fromJust mReverseOffer).price) else Nothing
+        TwoWays {straight = AssetDetails _ straightOffer, reverse = AssetDetails _ mReverseOffer} ->
+          OrderPrices
+            { opStraightPrice = DynamicVal (straightOffer.price),
+              opReversePrice = if isJust mReverseOffer then Just (DynamicVal (fromJust mReverseOffer).price) else Nothing
             }
 
 data PricingContext m = PricingContext
-  { pcStraightAsset :: GYAssetClass
-  , pcReverseAsset :: GYAssetClass
-  , pcPricingModel :: PricingModel m
-  , pcOraclePayload :: Maybe OracleRedeemerPayload
-  , pcDeadline :: Maybe GYSlot
+  { pcStraightAsset :: GYAssetClass,
+    pcReverseAsset :: GYAssetClass,
+    pcPricingModel :: PricingModel m,
+    pcOraclePayload :: Maybe OracleRedeemerPayload,
+    pcDeadline :: Maybe GYSlot
   }
 
 processFillSpec
@@ -880,37 +875,37 @@ processFillSpec twors twocd states spec@TWFillSpec {..} = do
             (twoWayOrderInfoToIn twors twoi BPgeniusyield_dex_v2_types_order_OrderRedeemer1FillOrder)
         baseState =
           FillState
-            { fsInfo = twoi
-            , fsOrderDatum = orderDatum
-            , fsStraightAsset = pricingCtx.pcStraightAsset
-            , fsReverseAsset = pricingCtx.pcReverseAsset
-            , fsInitialStraight = initialStraight
-            , fsInitialReverse = initialReverse
-            , fsCurrentStraight = initialStraight
-            , fsCurrentReverse = initialReverse
-            , fsSkeleton = baseSkeleton
-            , fsFlatFee = 0
-            , fsConsumed = False
-            , fsOraclePayload = Nothing
-            , fsDeadline = Nothing
-            , fsTakerFeeValue = mempty
-            , fsMakerFeeValue = mempty
+            { fsInfo = twoi,
+              fsOrderDatum = orderDatum,
+              fsStraightAsset = pricingCtx.pcStraightAsset,
+              fsReverseAsset = pricingCtx.pcReverseAsset,
+              fsInitialStraight = initialStraight,
+              fsInitialReverse = initialReverse,
+              fsCurrentStraight = initialStraight,
+              fsCurrentReverse = initialReverse,
+              fsSkeleton = baseSkeleton,
+              fsFlatFee = 0,
+              fsConsumed = False,
+              fsOraclePayload = Nothing,
+              fsDeadline = Nothing,
+              fsTakerFeeValue = mempty,
+              fsMakerFeeValue = mempty
             }
       st' <- applyFillState twocd baseState spec pricingCtx
       pure $ Map.insert twfsOrderRef st' states
-      where
-        selectInitialAmount
-          twoi'
-          OrderAssets
-            { oaStraightAsset = straightAsset
-            , oaStraightAmount = straightAmount
-            , oaReverseAsset = reverseAsset
-            , oaReverseAmount = reverseAmount
-            }
-          targetAsset
-            | targetAsset == straightAsset = straightAmount
-            | targetAsset == reverseAsset = reverseAmount
-            | otherwise = amountOf twoi'.twoiUTxOValue targetAsset
+     where
+      selectInitialAmount
+        twoi'
+        OrderAssets
+          { oaStraightAsset = straightAsset,
+            oaStraightAmount = straightAmount,
+            oaReverseAsset = reverseAsset,
+            oaReverseAmount = reverseAmount
+          }
+        targetAsset
+          | targetAsset == straightAsset = straightAmount
+          | targetAsset == reverseAsset = reverseAmount
+          | otherwise = amountOf twoi'.twoiUTxOValue targetAsset
 
 accumulateFillState
   :: (GYApiMonad m, HasCallStack)
@@ -963,16 +958,16 @@ resolvePricingContext twoi TWFillSpec {..} = do
           Just offer -> pure $ orderPrice offer.price amt
       pure
         PricingContext
-          { pcStraightAsset = straightAsset
-          , pcReverseAsset = reverseAsset
-          , pcPricingModel =
+          { pcStraightAsset = straightAsset,
+            pcReverseAsset = reverseAsset,
+            pcPricingModel =
               PricingModel
-                { pmStraight = straightCalc
-                , pmReverse = reverseCalc
-                , pmRedeemerPayload = Nothing
-                }
-          , pcOraclePayload = Nothing
-          , pcDeadline = Nothing
+                { pmStraight = straightCalc,
+                  pmReverse = reverseCalc,
+                  pmRedeemerPayload = Nothing
+                },
+            pcOraclePayload = Nothing,
+            pcDeadline = Nothing
           }
     TWOIPriceDynamic {twoioPriceDelta = TWOrder deltaWays} -> do
       cert <-
@@ -1003,39 +998,39 @@ resolvePricingContext twoi TWFillSpec {..} = do
           freshnessMs = toInteger twoi.twoiOracleFreshnessSeconds * 1000
           expiryMs = payload.orpTimestampMs + freshnessMs
           expiryPosix = fromRational (expiryMs % 1000)
-        in
+         in
           enclosingSlotFromTime' (timeFromPOSIX expiryPosix)
       case twfsDirection of
         FillDirectionStraight -> do
-          unless straightPairOk
-            $ throwAppError
-            $ someBackendError "oracle certificate asset pair mismatch for straight fill"
+          unless straightPairOk $
+            throwAppError $
+              someBackendError "oracle certificate asset pair mismatch for straight fill"
           let
             straightPrice = applyPriceDelta rawPrice straightDelta
             straightCalc amt =
-              either (throwAppError . someBackendError) pure
-                $ ceilingPriceProduct "straight payment" straightPrice amt
+              either (throwAppError . someBackendError) pure $
+                ceilingPriceProduct "straight payment" straightPrice amt
             reverseCalc _ =
-              throwAppError
-                $ someBackendError "reverse pricing requested without matching oracle certificate"
+              throwAppError $
+                someBackendError "reverse pricing requested without matching oracle certificate"
           gyLogDebug' "TWO.fill.oracle.basePrice" ("basePrice=" ++ show straightPrice)
           pure
             PricingContext
-              { pcStraightAsset = straightAsset
-              , pcReverseAsset = reverseAsset
-              , pcPricingModel =
+              { pcStraightAsset = straightAsset,
+                pcReverseAsset = reverseAsset,
+                pcPricingModel =
                   PricingModel
-                    { pmStraight = straightCalc
-                    , pmReverse = reverseCalc
-                    , pmRedeemerPayload = Just payload
-                    }
-              , pcOraclePayload = Just payload
-              , pcDeadline = Just deadlineSlot
+                    { pmStraight = straightCalc,
+                      pmReverse = reverseCalc,
+                      pmRedeemerPayload = Just payload
+                    },
+                pcOraclePayload = Just payload,
+                pcDeadline = Just deadlineSlot
               }
         FillDirectionReverse -> do
-          unless reversePairOk
-            $ throwAppError
-            $ someBackendError "oracle certificate asset pair mismatch for reverse fill"
+          unless reversePairOk $
+            throwAppError $
+              someBackendError "oracle certificate asset pair mismatch for reverse fill"
           reverseDelta <-
             maybe
               (throwAppError $ someBackendError "order does not support reverse fills under dynamic pricing")
@@ -1044,24 +1039,24 @@ resolvePricingContext twoi TWFillSpec {..} = do
           let
             reversePrice = applyPriceDelta rawPrice reverseDelta
             reverseCalc amt =
-              either (throwAppError . someBackendError) pure
-                $ ceilingPriceProduct "reverse payment" reversePrice amt
+              either (throwAppError . someBackendError) pure $
+                ceilingPriceProduct "reverse payment" reversePrice amt
             straightCalc _ =
-              throwAppError
-                $ someBackendError "straight pricing requested without matching oracle certificate"
+              throwAppError $
+                someBackendError "straight pricing requested without matching oracle certificate"
           gyLogDebug' "TWO.fill.oracle.basePrice" ("basePrice=" ++ show reversePrice)
           pure
             PricingContext
-              { pcStraightAsset = straightAsset
-              , pcReverseAsset = reverseAsset
-              , pcPricingModel =
+              { pcStraightAsset = straightAsset,
+                pcReverseAsset = reverseAsset,
+                pcPricingModel =
                   PricingModel
-                    { pmStraight = straightCalc
-                    , pmReverse = reverseCalc
-                    , pmRedeemerPayload = Just payload
-                    }
-              , pcOraclePayload = Just payload
-              , pcDeadline = Just deadlineSlot
+                    { pmStraight = straightCalc,
+                      pmReverse = reverseCalc,
+                      pmRedeemerPayload = Just payload
+                    },
+                pcOraclePayload = Just payload,
+                pcDeadline = Just deadlineSlot
               }
 
 orderPrice :: GYRational -> Natural -> Natural
@@ -1079,9 +1074,9 @@ applyFillState
   -> PricingContext m
   -> m FillState
 applyFillState twocd st TWFillSpec {..} PricingContext {..} = do
-  when (pcStraightAsset /= st.fsStraightAsset || pcReverseAsset /= st.fsReverseAsset)
-    $ throwAppError
-    $ someBackendError "inconsistent asset layout across grouped fills"
+  when (pcStraightAsset /= st.fsStraightAsset || pcReverseAsset /= st.fsReverseAsset) $
+    throwAppError $
+      someBackendError "inconsistent asset layout across grouped fills"
   let
     PricingModel {..} = pcPricingModel
     currentStraight = st.fsCurrentStraight
@@ -1129,10 +1124,10 @@ applyFillState twocd st TWFillSpec {..} PricingContext {..} = do
             else
               mustHaveOutput
                 GYTxOut
-                  { gyTxOutAddress = twfsRecipient
-                  , gyTxOutValue = takerValue
-                  , gyTxOutDatum = Nothing
-                  , gyTxOutRefS = Nothing
+                  { gyTxOutAddress = twfsRecipient,
+                    gyTxOutValue = takerValue,
+                    gyTxOutDatum = Nothing,
+                    gyTxOutRefS = Nothing
                   }
         consumedAny = offerGross > 0 || paymentProvided > 0
         takerContribution =
@@ -1166,15 +1161,15 @@ applyFillState twocd st TWFillSpec {..} PricingContext {..} = do
       let deadline' = mergeDeadlines st.fsDeadline pcDeadline
       pure
         st
-          { fsCurrentStraight = newStraight
-          , fsCurrentReverse = newReverse
-          , fsSkeleton = st.fsSkeleton <> takerSkeleton
-          , fsFlatFee = max st.fsFlatFee (if consumedAny then takerFlatFee else 0)
-          , fsConsumed = st.fsConsumed || consumedAny
-          , fsOraclePayload = oraclePayload'
-          , fsDeadline = deadline'
-          , fsTakerFeeValue = st.fsTakerFeeValue <> takerContribution
-          , fsMakerFeeValue = st.fsMakerFeeValue <> makerContribution
+          { fsCurrentStraight = newStraight,
+            fsCurrentReverse = newReverse,
+            fsSkeleton = st.fsSkeleton <> takerSkeleton,
+            fsFlatFee = max st.fsFlatFee (if consumedAny then takerFlatFee else 0),
+            fsConsumed = st.fsConsumed || consumedAny,
+            fsOraclePayload = oraclePayload',
+            fsDeadline = deadline',
+            fsTakerFeeValue = st.fsTakerFeeValue <> takerContribution,
+            fsMakerFeeValue = st.fsMakerFeeValue <> makerContribution
           }
     FillDirectionReverse -> do
       when (currentReverse < 0) $ throwAppError $ someBackendError "negative reverse liquidity"
@@ -1203,10 +1198,10 @@ applyFillState twocd st TWFillSpec {..} PricingContext {..} = do
             else
               mustHaveOutput
                 GYTxOut
-                  { gyTxOutAddress = twfsRecipient
-                  , gyTxOutValue = takerValue
-                  , gyTxOutDatum = Nothing
-                  , gyTxOutRefS = Nothing
+                  { gyTxOutAddress = twfsRecipient,
+                    gyTxOutValue = takerValue,
+                    gyTxOutDatum = Nothing,
+                    gyTxOutRefS = Nothing
                   }
         consumedAny = offerGross > 0 || paymentProvided > 0
         takerContribution =
@@ -1240,15 +1235,15 @@ applyFillState twocd st TWFillSpec {..} PricingContext {..} = do
       let deadline' = mergeDeadlines st.fsDeadline pcDeadline
       pure
         st
-          { fsCurrentStraight = newStraight
-          , fsCurrentReverse = newReverse
-          , fsSkeleton = st.fsSkeleton <> takerSkeleton
-          , fsFlatFee = max st.fsFlatFee (if consumedAny then takerFlatFee else 0)
-          , fsConsumed = st.fsConsumed || consumedAny
-          , fsOraclePayload = oraclePayload'
-          , fsDeadline = deadline'
-          , fsTakerFeeValue = st.fsTakerFeeValue <> takerContribution
-          , fsMakerFeeValue = st.fsMakerFeeValue <> makerContribution
+          { fsCurrentStraight = newStraight,
+            fsCurrentReverse = newReverse,
+            fsSkeleton = st.fsSkeleton <> takerSkeleton,
+            fsFlatFee = max st.fsFlatFee (if consumedAny then takerFlatFee else 0),
+            fsConsumed = st.fsConsumed || consumedAny,
+            fsOraclePayload = oraclePayload',
+            fsDeadline = deadline',
+            fsTakerFeeValue = st.fsTakerFeeValue <> takerContribution,
+            fsMakerFeeValue = st.fsMakerFeeValue <> makerContribution
           }
 
 mergeOraclePayloads
@@ -1277,10 +1272,10 @@ mergeOracleMap oracleAcc tn (Just payload) =
     Just existing
       | existing == payload -> pure oracleAcc
       | otherwise ->
-          throwAppError
-            $ someBackendError
-            $ "conflicting oracle certificate for order NFT "
-              <> Txt.pack (show tn)
+          throwAppError $
+            someBackendError $
+              "conflicting oracle certificate for order NFT "
+                <> Txt.pack (show tn)
 
 mergeDeadlines :: Maybe GYSlot -> Maybe GYSlot -> Maybe GYSlot
 mergeDeadlines existing incoming =
@@ -1329,10 +1324,10 @@ buildContinuingOutput orderDatum orderAddr straightAsset reverseAsset currentStr
         <> valueSingleton GYLovelace (continuingDeposit - currentLovelace)
     continuingOut =
       GYTxOut
-        { gyTxOutAddress = orderAddr
-        , gyTxOutValue = continuingValue
-        , gyTxOutDatum = Just (continuingDatum, GYTxOutUseInlineDatum)
-        , gyTxOutRefS = Nothing
+        { gyTxOutAddress = orderAddr,
+          gyTxOutValue = continuingValue,
+          gyTxOutDatum = Just (continuingDatum, GYTxOutUseInlineDatum),
+          gyTxOutRefS = Nothing
         }
   gyLogDebug'
     "TWO.fill.continuing"
@@ -1344,34 +1339,34 @@ buildContinuingOutput orderDatum orderAddr straightAsset reverseAsset currentStr
         ++ show continuingValue
     )
   pure continuingOut
-  where
-    TwoWayOrderInfo {twoiUTxOValue = currentValue} = twoi
-    expectedDeposit = toInteger twocd.twocdMinDeposit
-    currentLovelace = amountOf currentValue GYLovelace
+ where
+  TwoWayOrderInfo {twoiUTxOValue = currentValue} = twoi
+  expectedDeposit = toInteger twocd.twocdMinDeposit
+  currentLovelace = amountOf currentValue GYLovelace
 
-    BPgeniusyield_dex_v2_types_order_OrderDatum0OrderDatum owner paymentAddr nftName aDetails bDetails price validityStart validityEnd takerFlat takerRatio makerRatio freshness = orderDatum
-    BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails aAssetClass _ = aDetails
-    BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails bAssetClass _ = bDetails
+  BPgeniusyield_dex_v2_types_order_OrderDatum0OrderDatum owner paymentAddr nftName aDetails bDetails price validityStart validityEnd takerFlat takerRatio makerRatio freshness = orderDatum
+  BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails aAssetClass _ = aDetails
+  BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails bAssetClass _ = bDetails
 
-    updatedDatum =
-      BPgeniusyield_dex_v2_types_order_OrderDatum0OrderDatum
-        owner
-        paymentAddr
-        nftName
-        (BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails aAssetClass newStraight)
-        (BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails bAssetClass newReverse)
-        price
-        validityStart
-        validityEnd
-        takerFlat
-        takerRatio
-        makerRatio
-        freshness
+  updatedDatum =
+    BPgeniusyield_dex_v2_types_order_OrderDatum0OrderDatum
+      owner
+      paymentAddr
+      nftName
+      (BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails aAssetClass newStraight)
+      (BPgeniusyield_dex_v2_types_order_AssetDetails0AssetDetails bAssetClass newReverse)
+      price
+      validityStart
+      validityEnd
+      takerFlat
+      takerRatio
+      makerRatio
+      freshness
 
-    continuingDatum = datumFromPlutusData updatedDatum
+  continuingDatum = datumFromPlutusData updatedDatum
 
-    deltaStraight = newStraight - currentStraight
-    deltaReverse = newReverse - currentReverse
+  deltaStraight = newStraight - currentStraight
+  deltaReverse = newReverse - currentReverse
 
 decodeOrderDatum
   :: (GYApiMonad m, HasCallStack)
@@ -1390,12 +1385,12 @@ amountOf v ac =
 resolveContinuingDeposit :: Integer -> Integer -> Either Txt.Text Integer
 resolveContinuingDeposit minDeposit currentDeposit
   | currentDeposit < minDeposit =
-      Left
-        $ Txt.pack
-        $ "continuing lovelace below minimum: required at least "
-          <> show minDeposit
-          <> ", found "
-          <> show currentDeposit
+      Left $
+        Txt.pack $
+          "continuing lovelace below minimum: required at least "
+            <> show minDeposit
+            <> ", found "
+            <> show currentDeposit
   | otherwise = Right currentDeposit
 
 {-
@@ -1442,9 +1437,9 @@ cancelTwoWayOrders twors twois = do
     cancelWithdrawal =
       mustHaveWithdrawal
         GYTxWdrl
-          { gyTxWdrlStakeAddress = cancelStakeAddress
-          , gyTxWdrlAmount = 0
-          , gyTxWdrlWitness =
+          { gyTxWdrlStakeAddress = cancelStakeAddress,
+            gyTxWdrlAmount = 0,
+            gyTxWdrlWitness =
               GYTxWdrlWitnessScript
                 (GYStakeValReference twors.tworCancelRef $ twoWayOrderCancelValidator twors.tworRefNft)
                 unitRedeemer
@@ -1453,23 +1448,23 @@ cancelTwoWayOrders twors twois = do
       foldMap
         ( \twoi@TwoWayOrderInfo {..} ->
             let paymentValue = cancelPayoutValue twoi
-            in mustHaveInput
-                 (twoWayOrderInfoToIn twors twoi BPgeniusyield_dex_v2_types_order_OrderRedeemer0CancelOrder)
-                 <> mustHaveOutput (twoWayOrderInfoToPayment twoi paymentValue)
-                 <> mconcat [mustBeSignedBy pkh | GYCredentialByKey pkh <- twoiOwnerCredentials]
-                 <> mustMint
-                   ( GYMintReference twors.tworMintRef . mintingPolicyToScript
-                       $ twoWayOrderMintValidator twors.tworRefNft
-                   )
-                   nothingRedeemer
-                   twoiNFT
-                   (-1)
+             in mustHaveInput
+                  (twoWayOrderInfoToIn twors twoi BPgeniusyield_dex_v2_types_order_OrderRedeemer0CancelOrder)
+                  <> mustHaveOutput (twoWayOrderInfoToPayment twoi paymentValue)
+                  <> mconcat [mustBeSignedBy pkh | GYCredentialByKey pkh <- twoiOwnerCredentials]
+                  <> mustMint
+                    ( GYMintReference twors.tworMintRef . mintingPolicyToScript $
+                        twoWayOrderMintValidator twors.tworRefNft
+                    )
+                    nothingRedeemer
+                    twoiNFT
+                    (-1)
         )
         twois
     feeOutput = mempty
 
-  pure
-    $ cancelWithdrawal
+  pure $
+    cancelWithdrawal
       <> feeOutput
       <> accumulatedSkeleton
       <> mustHaveRefInput cfgRef
@@ -1500,12 +1495,12 @@ twoWayOrderInfoToIn
   -> GYTxIn PlutusV3
 twoWayOrderInfoToIn twors TwoWayOrderInfo {..} oa =
   GYTxIn
-    { gyTxInTxOutRef = twoiRef
-    , gyTxInWitness =
+    { gyTxInTxOutRef = twoiRef,
+      gyTxInWitness =
         GYTxInWitnessScript
-          ( GYInReference twors.tworSpendRef
-              $ validatorToScript
-              $ twoWayOrderSpendValidator twors.tworRefNft
+          ( GYInReference twors.tworSpendRef $
+              validatorToScript $
+                twoWayOrderSpendValidator twors.tworRefNft
           )
           (Just twoiRawDatum)
           $ redeemerFromPlutusData oa
@@ -1515,20 +1510,20 @@ twoWayOrderInfoToPayment
   :: TwoWayOrderInfo -> GYValue -> GYTxOut 'PlutusV3
 twoWayOrderInfoToPayment TwoWayOrderInfo {..} v =
   let nftDatum = datumFromPlutusData $ tokenNameToPlutus twoiNFT
-  in GYTxOut
-       { gyTxOutAddress = twoiOwnerAddr
-       , gyTxOutValue = v
-       , gyTxOutDatum = Just (nftDatum, GYTxOutUseInlineDatum)
-       , gyTxOutRefS = Nothing
-       }
+   in GYTxOut
+        { gyTxOutAddress = twoiOwnerAddr,
+          gyTxOutValue = v,
+          gyTxOutDatum = Just (nftDatum, GYTxOutUseInlineDatum),
+          gyTxOutRefS = Nothing
+        }
 
 -- Common pre-computation for placing an order
 data PlaceCommon = PlaceCommon
-  { pcOwnerPkh :: !GYPubKeyHash
-  , pcScriptAddr :: !GYAddress
-  , pcNftInput :: !(GYTxIn PlutusV3)
-  , pcPolicy :: !(GYScript PlutusV3)
-  , pcPolicyId :: !GYMintingPolicyId
+  { pcOwnerPkh :: !GYPubKeyHash,
+    pcScriptAddr :: !GYAddress,
+    pcNftInput :: !(GYTxIn PlutusV3),
+    pcPolicy :: !(GYScript PlutusV3),
+    pcPolicyId :: !GYMintingPolicyId
   }
 
 throwSpecError
@@ -1548,8 +1543,8 @@ validateValidityRange
   -> m ()
 validateValidityRange start end =
   for_ ((,) <$> start <*> end) $ \(start', end') ->
-    when (end' < start')
-      $ throwSpecError
+    when (end' < start') $
+      throwSpecError
         "END_EARLIER_THAN_START"
         ("End time is earlier than start. Start time: " ++ show start' ++ ", end time: " ++ show end')
 
@@ -1558,8 +1553,8 @@ ensureNoExtraLovelace
   => Natural
   -> m ()
 ensureNoExtraLovelace extraLov =
-  when (extraLov /= 0)
-    $ throwSpecError
+  when (extraLov /= 0) $
+    throwSpecError
       "EXTRA_MAKER_LOVELACE_UNSUPPORTED"
       ("Additional lovelace set to " ++ show extraLov ++ ", expected 0")
 
@@ -1571,15 +1566,15 @@ scriptOutput
   -> GYTxOut 'PlutusV3
 scriptOutput PlaceCommon {..} datum value =
   GYTxOut
-    { gyTxOutAddress = pcScriptAddr
-    , gyTxOutValue = value
-    , gyTxOutDatum = Just (datumFromPlutusData datum, GYTxOutUseInlineDatum)
-    , gyTxOutRefS = Nothing
+    { gyTxOutAddress = pcScriptAddr,
+      gyTxOutValue = value,
+      gyTxOutDatum = Just (datumFromPlutusData datum, GYTxOutUseInlineDatum),
+      gyTxOutRefS = Nothing
     }
 
 data OrderAssembly = OrderAssembly
-  { oaValue :: !GYValue
-  , oaDatum :: !BPgeniusyield_dex_v2_types_order_OrderDatum
+  { oaValue :: !GYValue,
+    oaDatum :: !BPgeniusyield_dex_v2_types_order_OrderDatum
   }
 
 assembleOrderSpec
@@ -1594,14 +1589,14 @@ assembleOrderSpec
 assembleOrderSpec PlaceCommon {..} twocd TWPlaceSpec {..} nftName nftValue depositValue =
   case twpsDirection of
     TWOneWay (offerAmt, offerAC) priceAC addOff -> do
-      when (offerAmt == 0)
-        $ throwSpecError "NON_POSITIVE_AMOUNT" ("Amount was :  " ++ show offerAmt)
-      when (offerAC == priceAC)
-        $ throwSpecError
+      when (offerAmt == 0) $
+        throwSpecError "NON_POSITIVE_AMOUNT" ("Amount was :  " ++ show offerAmt)
+      when (offerAC == priceAC) $
+        throwSpecError
           "NOT_DIFFERENT_OFFERED_ASKED_ASSET"
           ("Offered asset is same as asked asset, which is: " ++ show offerAC)
-      when (addOff /= 0)
-        $ throwSpecError
+      when (addOff /= 0) $
+        throwSpecError
           "EXTRA_MAKER_ASSET_UNSUPPORTED"
           ("Additional offered asset set to " ++ show addOff ++ ", expected 0")
 
@@ -1612,18 +1607,18 @@ assembleOrderSpec PlaceCommon {..} twocd TWPlaceSpec {..} nftName nftValue depos
 
       datum <- case twpsPriceSpec of
         TWPriceFixed straight _mRev -> do
-          when (straight <= 0)
-            $ throwSpecError "NON_POSITIVE_PRICE" ("Price was:  " ++ show straight)
+          when (straight <= 0) $
+            throwSpecError "NON_POSITIVE_PRICE" ("Price was:  " ++ show straight)
           pure $ mkTwoWayOrderFixedDatum pcOwnerPkh twpsOwner nftName (offerAC, offerAmt') priceAC straight twpsStart twpsEnd twocd.twocdTakerFeeFlat twocd.twocdTakerFeeRatio twocd.twocdMakerFeeRatio twocd.twocdOracleFreshnessSeconds
         TWPriceRelative ovk (PriceDelta off spr) _mRev ->
           pure $ mkTwoWayOrderDeltaDatumOneWay pcOwnerPkh twpsOwner nftName (offerAC, offerAmt') priceAC ovk off spr twpsStart twpsEnd twocd.twocdTakerFeeFlat twocd.twocdTakerFeeRatio twocd.twocdMakerFeeRatio twocd.twocdOracleFreshnessSeconds
 
       pure OrderAssembly {oaValue = totalValue, oaDatum = datum}
     TWTwoway (offerAmt, offerAC) (revAmt, revAC) -> do
-      when (offerAmt == 0 && revAmt == 0)
-        $ throwSpecError "NON_POSITIVE_AMOUNT" "Both amounts zero"
-      when (offerAC == revAC)
-        $ throwSpecError
+      when (offerAmt == 0 && revAmt == 0) $
+        throwSpecError "NON_POSITIVE_AMOUNT" "Both amounts zero"
+      when (offerAC == revAC) $
+        throwSpecError
           "NOT_DIFFERENT_OFFERED_ASKED_ASSET"
           ("Assets identical: " ++ show offerAC)
 
@@ -1638,8 +1633,8 @@ assembleOrderSpec PlaceCommon {..} twocd TWPlaceSpec {..} nftName nftValue depos
 
       datum <- case twpsPriceSpec of
         TWPriceFixed straight mRev -> do
-          when (straight <= 0)
-            $ throwSpecError "NON_POSITIVE_PRICE" ("Price was:  " ++ show straight)
+          when (straight <= 0) $
+            throwSpecError "NON_POSITIVE_PRICE" ("Price was:  " ++ show straight)
           let revP = maybe (recip straight) id mRev
           pure $ mkTwoWayOrderFixedDatumTwoWay pcOwnerPkh twpsOwner nftName (offerAC, offerAmt') (revAC, revAmt') straight revP twpsStart twpsEnd twocd.twocdTakerFeeFlat twocd.twocdTakerFeeRatio twocd.twocdMakerFeeRatio twocd.twocdOracleFreshnessSeconds
         TWPriceRelative ovk (PriceDelta off spr) mRev -> do
@@ -1714,11 +1709,11 @@ buildPlaceCommonWithRef TWORef {..} addr stakeCred nftRef = do
     policy = twoWayOrderMintValidator tworRefNft
   pure
     PlaceCommon
-      { pcOwnerPkh = pkh
-      , pcScriptAddr = outAddr'
-      , pcNftInput = nftInput
-      , pcPolicy = policy
-      , pcPolicyId = mintingPolicyId policy
+      { pcOwnerPkh = pkh,
+        pcScriptAddr = outAddr',
+        pcNftInput = nftInput,
+        pcPolicy = policy,
+        pcPolicyId = mintingPolicyId policy
       }
 
 -- placeTwoWayOrderOneWayCore (removed)
@@ -1744,10 +1739,10 @@ placeTwoWayOrders
 placeTwoWayOrders twors specs cfgRef twocd = do
   -- Basic preconditions and owner unification
   let owner0 = case NE.head specs of TWPlaceSpec {twpsOwner = o} -> o
-  when (not $ all (\TWPlaceSpec {twpsOwner = o} -> o == owner0) (NE.toList specs))
-    $ throwError
-    $ GYApplicationException
-    $ GYApiError "MULTI_OWNER_UNSUPPORTED" status400 (Txt.pack "All TWPlaceSpec owners must be identical for multi-order placement")
+  when (not $ all (\TWPlaceSpec {twpsOwner = o} -> o == owner0) (NE.toList specs)) $
+    throwError $
+      GYApplicationException $
+        GYApiError "MULTI_OWNER_UNSUPPORTED" status400 (Txt.pack "All TWPlaceSpec owners must be identical for multi-order placement")
 
   -- Select a single input ref and set the redeemer amount to total orders count
   let k = fromIntegral (NE.length specs) :: Integer
@@ -1774,16 +1769,16 @@ placeTwoWayOrders twors specs cfgRef twocd = do
       | totalFeeValue == mempty = mempty
       | otherwise =
           let feeDatum =
-                datumFromPlutusData
-                  $ mintingPolicyIdToCurrencySymbol
-                  $ twoWayOrderNftPolicyId twors.tworRefNft
-          in mustHaveOutput
-               GYTxOut
-                 { gyTxOutAddress = twocd.twocdFeeAddr
-                 , gyTxOutValue = totalFeeValue
-                 , gyTxOutDatum = Just (feeDatum, GYTxOutUseInlineDatum)
-                 , gyTxOutRefS = Nothing
-                 }
+                datumFromPlutusData $
+                  mintingPolicyIdToCurrencySymbol $
+                    twoWayOrderNftPolicyId twors.tworRefNft
+           in mustHaveOutput
+                GYTxOut
+                  { gyTxOutAddress = twocd.twocdFeeAddr,
+                    gyTxOutValue = totalFeeValue,
+                    gyTxOutDatum = Just (feeDatum, GYTxOutUseInlineDatum),
+                    gyTxOutRefS = Nothing
+                  }
 
     baseSkeleton =
       mustHaveInput pcNftInput
@@ -1800,10 +1795,10 @@ data TWFillDirection
   deriving anyclass (Aeson.ToJSON, Swagger.ToSchema)
 
 data TWFillSpec = TWFillSpec
-  { twfsOrderRef :: !GYTxOutRef
-  , twfsDirection :: !TWFillDirection
-  , twfsAmount :: !Natural
-  , twfsOracleCertificate :: !(Maybe OracleCertificate)
-  , twfsRecipient :: !GYAddress
+  { twfsOrderRef :: !GYTxOutRef,
+    twfsDirection :: !TWFillDirection,
+    twfsAmount :: !Natural,
+    twfsOracleCertificate :: !(Maybe OracleCertificate),
+    twfsRecipient :: !GYAddress
   }
   deriving stock (Generic, Show)

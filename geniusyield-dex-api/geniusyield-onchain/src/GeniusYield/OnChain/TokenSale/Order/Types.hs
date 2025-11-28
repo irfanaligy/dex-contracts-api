@@ -9,18 +9,16 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module GeniusYield.OnChain.TokenSale.Order.Types
-  ( PTokenSaleParams (..)
-  , POrderDatum (..)
-  , POrderAction (..)
-  )
-where
+module GeniusYield.OnChain.TokenSale.Order.Types (
+  PTokenSaleParams (..),
+  POrderDatum (..),
+  POrderAction (..),
+) where
 
+import GeniusYield.OnChain.Plutarch.Types (PAssetClass (..))
 import Plutarch.Api.V1
 import Plutarch.DataRepr (PDataFields)
 import Plutarch.Prelude
-
-import GeniusYield.OnChain.Plutarch.Types (PAssetClass (..))
 
 ----------------------------------------------------------------------
 
@@ -30,19 +28,19 @@ newtype PTokenSaleParams (s :: S)
       ( Term
           s
           ( PDataRecord
-              '[ "beginSale" ':= PPOSIXTime
-               , "endSale" ':= PPOSIXTime
-               , "endDistribution" ':= PPOSIXTime
-               , "token" ':= PAssetClass
-               , "price" ':= PRational
-               , "sellerKey" ':= PPubKeyHash
-               , "minAllocation" ':= PInteger
-               , "fee" ':= PRational
-               , "feeAddress" ':= PAddress
+              '[ "beginSale" ':= PPOSIXTime,
+                 "endSale" ':= PPOSIXTime,
+                 "endDistribution" ':= PPOSIXTime,
+                 "token" ':= PAssetClass,
+                 "price" ':= PRational,
+                 "sellerKey" ':= PPubKeyHash,
+                 "minAllocation" ':= PInteger,
+                 "fee" ':= PRational,
+                 "feeAddress" ':= PAddress
                ]
           )
       )
-  deriving stock Generic
+  deriving stock (Generic)
   deriving anyclass (PDataFields, PEq, PIsData, PlutusType)
 
 instance DerivePlutusType PTokenSaleParams where type DPTStrat _ = PlutusTypeData
@@ -55,12 +53,12 @@ newtype POrderDatum (s :: S)
       ( Term
           s
           ( PDataRecord
-              '[ "ownerKey" ':= PPubKeyHash
-               , "ownerAddr" ':= PAddress
+              '[ "ownerKey" ':= PPubKeyHash,
+                 "ownerAddr" ':= PAddress
                ]
           )
       )
-  deriving stock Generic
+  deriving stock (Generic)
   deriving anyclass (PDataFields, PEq, PIsData, PlutusType)
 
 instance DerivePlutusType POrderDatum where type DPTStrat _ = PlutusTypeData
@@ -71,7 +69,7 @@ instance DerivePlutusType POrderDatum where type DPTStrat _ = PlutusTypeData
 data POrderAction (s :: S)
   = PCancel (Term s (PDataRecord '[]))
   | PFill (Term s (PDataRecord '[]))
-  deriving stock Generic
+  deriving stock (Generic)
   deriving anyclass (PEq, PIsData, PlutusType)
 
 instance DerivePlutusType POrderAction where type DPTStrat _ = PlutusTypeData

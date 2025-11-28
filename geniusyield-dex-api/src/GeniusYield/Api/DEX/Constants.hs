@@ -11,11 +11,13 @@ module GeniusYield.Api.DEX.Constants (
 ) where
 
 -- import GeniusYield.Api.DEX.TwoWayOrderConfig (TWORef (..), RefTWOCD (..), fetchTwoWayOrderConfig)
-import GeniusYield.Api.DEX.TwoWayOrderConfig (TWORef (..))
+
 import GeniusYield.Api.DEX.PartialOrderConfig (PORef (..), PORefs (..))
+import GeniusYield.Api.DEX.TwoWayOrderConfig (TWORef (..))
 import GeniusYield.Scripts (GYCompiledScripts, readCompiledScripts)
 import GeniusYield.Scripts.DEX.Version (POCVersion (POCVersion1, POCVersion1_1))
 import GeniusYield.Types (GYAddress, unsafeAddressFromText)
+
 -- import Control.Monad.Reader (runReaderT)
 -- import PlutusLedgerApi.V1 (Address)
 -- import PlutusLedgerApi.V1.Scripts (ScriptHash)
@@ -57,26 +59,24 @@ poRefsPreprod =
     }
 
 twoRefsMainnet :: TWORef
-twoRefsMainnet = 
+twoRefsMainnet =
   TWORef
-  {
-    tworRefNft    = ""
-  , tworMintRef   = ""
-  , tworSpendRef  = ""
-  , tworFillRef   = ""
-  , tworCancelRef = ""
-  }
+    { tworRefNft = "",
+      tworMintRef = "",
+      tworSpendRef = "",
+      tworFillRef = "",
+      tworCancelRef = ""
+    }
 
 twoRefsPreprod :: TWORef
-twoRefsPreprod = 
+twoRefsPreprod =
   TWORef
-  {
-    tworRefNft    = "fae686ea8f21d567841d703dea4d4221c2af071a6f2b433ff07c0af2.dbcf78371df705da17b8c70e93cb3603ba6b9009ec3389fe319ec0bab1f9406d"
-  , tworMintRef   = "e6f7734e1c65da63b4e1185ed57c80c74291bb072c8a1337bd7e5a6a8f0dbc69#1"
-  , tworSpendRef  = "9432d77b5636390d2af241c92bcaec2af910bff034eea73918953a34b50d33e7#0"
-  , tworFillRef   = "62ba0d7454c8cfa8b49ec9bf079eb561a5728ea59e611d91877a403b0d5153fd#0"
-  , tworCancelRef = "6f0113dfc55a745046fa0701debb1472e01ea6001ad20b94934abea359baaa33#0"
-  }
+    { tworRefNft = "fae686ea8f21d567841d703dea4d4221c2af071a6f2b433ff07c0af2.dbcf78371df705da17b8c70e93cb3603ba6b9009ec3389fe319ec0bab1f9406d",
+      tworMintRef = "e6f7734e1c65da63b4e1185ed57c80c74291bb072c8a1337bd7e5a6a8f0dbc69#1",
+      tworSpendRef = "9432d77b5636390d2af241c92bcaec2af910bff034eea73918953a34b50d33e7#0",
+      tworFillRef = "62ba0d7454c8cfa8b49ec9bf079eb561a5728ea59e611d91877a403b0d5153fd#0",
+      tworCancelRef = "6f0113dfc55a745046fa0701debb1472e01ea6001ad20b94934abea359baaa33#0"
+    }
 
 poConfigAddrMainnet :: POCVersion -> GYAddress
 poConfigAddrMainnet =
@@ -95,33 +95,32 @@ poConfigAddrPreprod =
         POCVersion1_1 -> v1_1Addr
 
 data DEXInfo = DEXInfo
-  {
-    dexPORefs  :: !PORefs
-  , dexTWORefs :: !TWORef
-  , dexScripts :: !GYCompiledScripts
-  -- , dexRefCfg  :: !RefTWOCD
+  { dexPORefs :: !PORefs,
+    dexTWORefs :: !TWORef,
+    dexScripts :: !GYCompiledScripts
+    -- , dexRefCfg  :: !RefTWOCD
   }
 
 dexInfoDefaultMainnet :: IO DEXInfo
 dexInfoDefaultMainnet = do
-  gycs   <- readCompiledScripts
+  gycs <- readCompiledScripts
   -- refCfg <- runReaderT (fetchTwoWayOrderConfig (tworRefNft twoRefsMainnet)) gycs
-  return $ DEXInfo
-    { 
-      dexPORefs  = poRefsMainnet
-    , dexTWORefs = twoRefsMainnet
-    , dexScripts = gycs
-    -- , dexRefCfg  = refCfg
-    }
+  return $
+    DEXInfo
+      { dexPORefs = poRefsMainnet,
+        dexTWORefs = twoRefsMainnet,
+        dexScripts = gycs
+        -- , dexRefCfg  = refCfg
+      }
 
 dexInfoDefaultPreprod :: IO DEXInfo
 dexInfoDefaultPreprod = do
-  gycs   <- readCompiledScripts
+  gycs <- readCompiledScripts
   -- refCfg <- runReaderT (fetchTwoWayOrderConfig (tworRefNft twoRefsPreprod)) gycs
-  return $ DEXInfo
-    { 
-      dexPORefs  = poRefsPreprod
-    , dexTWORefs = twoRefsPreprod
-    , dexScripts = gycs
-    -- , dexRefCfg  = refCfg
-    }
+  return $
+    DEXInfo
+      { dexPORefs = poRefsPreprod,
+        dexTWORefs = twoRefsPreprod,
+        dexScripts = gycs
+        -- , dexRefCfg  = refCfg
+      }

@@ -8,11 +8,10 @@
 
 module GeniusYield.OnChain.Staking.Stake (stakeValidator) where
 
-import Plutarch.Api.V2
-import Plutarch.Prelude
-
 import GeniusYield.OnChain.Plutarch.Api
 import GeniusYield.OnChain.Staking.Stake.Types
+import Plutarch.Api.V2
+import Plutarch.Prelude
 
 {- | Validates the retrieval of staked funds. Such funds can only be retrieved under the following conditions:
 
@@ -29,29 +28,29 @@ stakeValidator
        )
 stakeValidator = plam $ \sd _ ctx ->
   validator # pfromData sd #$ pfield @"txInfo" #$ pfromData ctx
-  where
-    validator
-      :: Term
-           s
-           ( PStakeDatum
-               :--> PTxInfo
-               :--> PUnit
-           )
-    validator = plam $ \sd info ->
-      unTermCont $ do
-        signedByOwner <-
-          pletC
-            $ ptxSignedBy # (pfield @"ownerKey" # sd) #$ pfield @"signatories" # info
+ where
+  validator
+    :: Term
+         s
+         ( PStakeDatum
+             :--> PTxInfo
+             :--> PUnit
+         )
+  validator = plam $ \sd info ->
+    unTermCont $ do
+      signedByOwner <-
+        pletC $
+          ptxSignedBy # (pfield @"ownerKey" # sd) #$ pfield @"signatories" # info
 
-        lockedDeadline <- pmatchC (pfromData $ pfield @"lockedUntil" # sd)
+      lockedDeadline <- pmatchC (pfromData $ pfield @"lockedUntil" # sd)
 
-        pguardC "must be signed by owner" signedByOwner
+      pguardC "must be signed by owner" signedByOwner
 
-        case lockedDeadline of
-          PDNothing _ -> return (pconstant ())
-          PDJust t ->
-            return
-              $ pif
-                (pcontains # (pFrom #$ pfield @"_0" # t) #$ pfield @"validRange" # info)
-                (pconstant ())
-                (ptraceError "too early")
+      case lockedDeadline of
+        PDNothing _ -> return (pconstant ())
+        PDJust t ->
+          return $
+            pif
+              (pcontains # (pFrom #$ pfield @"_0" # t) #$ pfield @"validRange" # info)
+              (pconstant ())
+              (ptraceError "too early")

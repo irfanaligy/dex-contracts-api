@@ -387,8 +387,8 @@ type OrdersAPI =
     --   :> Description ("Build a transaction to cancel order(s). " `AppendSymbol` CommonCollateralText)
     --   :> "tx"
     --   :> "build-cancel"
-      :> ReqBody '[JSON] CancelOrderParameters
-      :> Post '[JSON] CancelOrderTransactionDetails
+    :> ReqBody '[JSON] CancelOrderParameters
+    :> Post '[JSON] CancelOrderTransactionDetails
     :<|> Summary "Cancel order(s)"
       :> Description ("Cancel order(s). " `AppendSymbol` CommonSignText)
       :> ReqBody '[JSON] BotCancelOrderParameters
@@ -417,9 +417,9 @@ type OrdersAPI =
 
 handleOrdersApi :: Ctx -> ServerT OrdersAPI IO
 handleOrdersApi ctx =
-    -- handlePlaceOrder ctx
-    -- :<|> handlePlaceOrderAndSignSubmit ctx
-    handleCancelOrders ctx
+  -- handlePlaceOrder ctx
+  -- :<|> handlePlaceOrderAndSignSubmit ctx
+  handleCancelOrders ctx
     :<|> handleCancelOrdersAndSignSubmit ctx
     :<|> handleOrdersDetails ctx
     :<|> handleOrderDetails ctx
@@ -466,10 +466,11 @@ handleOrdersApi ctx =
 --         potdOrderRef = txOutRefFromTuple (txId, 0),
 --         potdNFTToken = nftAC
 --       }
--- 
+--
 resolveCtxSigningKeyInfo :: Ctx -> IO (Strict.Pair GYSomePaymentSigningKey GYAddress)
 resolveCtxSigningKeyInfo ctx = maybe throwNoSigningKeyError pure (ctxSigningKey ctx)
--- 
+
+--
 resolveCtxAddr :: Ctx -> IO GYAddress
 resolveCtxAddr ctx = Strict.snd <$> resolveCtxSigningKeyInfo ctx
 

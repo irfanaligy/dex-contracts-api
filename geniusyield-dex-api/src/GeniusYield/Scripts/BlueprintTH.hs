@@ -1,11 +1,10 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module GeniusYield.Scripts.BlueprintTH
-  ( makeBPTypes
-  , uponBPTypes
-  )
-where
+module GeniusYield.Scripts.BlueprintTH (
+  makeBPTypes,
+  uponBPTypes,
+) where
 
 import Control.Monad (foldM)
 import Data.ByteString.Base16 qualified as BS16
@@ -44,8 +43,8 @@ createIssue = "Please raise an issue if you think it's a valid use case o/w."
 
 sanitize :: Text.Text -> Text.Text
 sanitize = Text.map (\c -> if c `elem` supportedChars then c else '_')
-  where
-    supportedChars = '_' : ['A' .. 'Z'] ++ ['a' .. 'z'] ++ ['0' .. '9']
+ where
+  supportedChars = '_' : ['A' .. 'Z'] ++ ['a' .. 'z'] ++ ['0' .. '9']
 
 genTyconName :: DefinitionId -> Name
 genTyconName defId = mkName $ Text.unpack $ "BP" <> sanitize (unDefinitionId defId)
@@ -63,7 +62,7 @@ decTypes defId = \case
         pure [TySynD tyconName [] (AppT ListT (ConT (genTyconName itemDefId)))]
       other ->
         let itemDefId = mkDefinitionId $ unDefinitionId defId <> "_Item"
-        in pure [TySynD tyconName [] (AppT ListT (ConT (genTyconName itemDefId)))] <> decTypes itemDefId other
+         in pure [TySynD tyconName [] (AppT ListT (ConT (genTyconName itemDefId)))] <> decTypes itemDefId other
     ListItemSchemaSchemas schemas ->
       case traverse schemaRefName schemas of
         Left err -> error $ moduleName <> ": " <> err <> " " <> createIssue
@@ -73,12 +72,12 @@ decTypes defId = \case
             [ty] -> pure [TySynD tyconName [] (ConT ty)]
             _ ->
               let tupleTy = foldl AppT (TupleT (length tys)) (map ConT tys)
-              in pure [TySynD tyconName [] tupleTy]
+               in pure [TySynD tyconName [] tupleTy]
   SchemaMap _ MkMapSchema {..} ->
     let
       keyDefId = mkDefinitionId $ unDefinitionId defId <> "_Key"
       valDefId = mkDefinitionId $ unDefinitionId defId <> "_Value"
-    in
+     in
       pure [TySynD tyconName [] (AppT (AppT (ConT ''PlutusTx.Map) (ConT (genTyconName keyDefId))) (ConT (genTyconName valDefId)))]
         <> decTypes keyDefId msKeys
         <> decTypes valDefId msValues
@@ -99,30 +98,30 @@ decTypes defId = \case
   SchemaAllOf _ -> error $ moduleName <> ": \"allOf\" is not supported as type is ambiguous."
   SchemaNot _ -> error $ moduleName <> ": \"not\" is not supported as type is ambiguous."
   SchemaDefinitionRef r -> pure [TySynD tyconName [] (ConT (genTyconName r))]
-  where
-    errBuiltin name = error $ moduleName <> ": \"" <> name <> "\" is a built-in type which are not supported."
-    tyconName = genTyconName defId
+ where
+  errBuiltin name = error $ moduleName <> ": \"" <> name <> "\" is a built-in type which are not supported."
+  tyconName = genTyconName defId
 
-    schemaRefName :: Schema -> Either String Name
-    schemaRefName = \case
-      SchemaDefinitionRef d -> Right (genTyconName d)
-      other -> Left $ "Unsupported schema inside tuple: " <> show other
+  schemaRefName :: Schema -> Either String Name
+  schemaRefName = \case
+    SchemaDefinitionRef d -> Right (genTyconName d)
+    other -> Left $ "Unsupported schema inside tuple: " <> show other
 
-    getFieldRefs racc (SchemaDefinitionRef d) = (Bang NoSourceUnpackedness NoSourceStrictness, ConT (genTyconName d)) : racc
-    getFieldRefs _ _ = error $ moduleName <> ": \"constructor\" fields must be all of type \"$ref\". " <> createIssue
+  getFieldRefs racc (SchemaDefinitionRef d) = (Bang NoSourceUnpackedness NoSourceStrictness, ConT (genTyconName d)) : racc
+  getFieldRefs _ _ = error $ moduleName <> ": \"constructor\" fields must be all of type \"$ref\". " <> createIssue
 
-    g ss =
-      let
-        compareConstructors (SchemaConstructor _ a) (SchemaConstructor _ b) = compare (csIndex a) (csIndex b)
-        compareConstructors _ _ = error $ moduleName <> ": schemas inside \"oneOf\" or \"anyOf\" must be all of dataType \"constructor\". " <> createIssue
-        ssSorted = NE.sortBy compareConstructors ss
-        f acc s = case s of
-          SchemaConstructor schemaInfo MkConstructorSchema {..} ->
-            let constructorName = genTyconName $ mkDefinitionId $ unDefinitionId defId <> sanitize (Text.pack (show csIndex) <> fromMaybe "" (title schemaInfo))
-            in NormalC constructorName (reverse $ foldl' getFieldRefs [] csFields) : acc
-          _ -> error $ moduleName <> ": absurd case encountered when handling constructors."
-      in
-        pure [DataD [] tyconName [] Nothing (reverse $ foldl' f [] ssSorted) stockDerivations]
+  g ss =
+    let
+      compareConstructors (SchemaConstructor _ a) (SchemaConstructor _ b) = compare (csIndex a) (csIndex b)
+      compareConstructors _ _ = error $ moduleName <> ": schemas inside \"oneOf\" or \"anyOf\" must be all of dataType \"constructor\". " <> createIssue
+      ssSorted = NE.sortBy compareConstructors ss
+      f acc s = case s of
+        SchemaConstructor schemaInfo MkConstructorSchema {..} ->
+          let constructorName = genTyconName $ mkDefinitionId $ unDefinitionId defId <> sanitize (Text.pack (show csIndex) <> fromMaybe "" (title schemaInfo))
+           in NormalC constructorName (reverse $ foldl' getFieldRefs [] csFields) : acc
+        _ -> error $ moduleName <> ": absurd case encountered when handling constructors."
+     in
+      pure [DataD [] tyconName [] Nothing (reverse $ foldl' f [] ssSorted) stockDerivations]
 
 type UPLCProgram = UPLC.Program UPLC.DeBruijn UPLC.DefaultUni UPLC.DefaultFun ()
 
@@ -165,9 +164,9 @@ uponBPTypes fp = do
                 ( curry
                     ( \(MkParameterBlueprint {..}, i :: Natural) ->
                         let prefix = valName' <> show i
-                        in mkName $ case parameterTitle of
-                             Nothing -> prefix
-                             Just pt -> prefix <> Text.unpack (sanitize pt)
+                         in mkName $ case parameterTitle of
+                              Nothing -> prefix
+                              Just pt -> prefix <> Text.unpack (sanitize pt)
                     )
                 )
                 validatorParameters
@@ -199,7 +198,7 @@ uponBPTypes fp = do
     <> pure [FunD getScript [Clause [VarP scriptParamName] (NormalB bodyGetScript) []]]
     <> pure valDecs
     <> foldl' f (pure []) typeDecs
-  where
-    f acc dec = case dec of
-      DataD _ n _ _ _ _ -> acc <> PlutusTx.unstableMakeIsData n
-      _ -> acc
+ where
+  f acc dec = case dec of
+    DataD _ n _ _ _ _ -> acc <> PlutusTx.unstableMakeIsData n
+    _ -> acc

@@ -1,14 +1,17 @@
 {-# LANGUAGE DataKinds #-}
 
-module GeniusYield.OnChain.DEX.PartialOrder.Compiled
-  ( originalPartialOrderValidator
-  , optimizedPartialOrderValidator
-  , optimizedPartialOrderValidatorWithTracing
-  )
-where
+module GeniusYield.OnChain.DEX.PartialOrder.Compiled (
+  originalPartialOrderValidator,
+  optimizedPartialOrderValidator,
+  optimizedPartialOrderValidatorWithTracing,
+) where
 
 import Data.Default (def)
 import Data.Text (Text)
+import GeniusYield.OnChain.DEX.PartialOrder
+import GeniusYield.OnChain.Plutarch.Api (PAssetClass)
+import GeniusYield.OnChain.Utils (desiredTracingMode)
+import GeniusYield.Plutonomy ()
 import Plutarch
 import Plutarch.Api.V1
 import Plutarch.Api.V2 qualified as PV2
@@ -18,11 +21,6 @@ import PlutusLedgerApi.V1
 import PlutusLedgerApi.V1.Value (AssetClass)
 import Ply hiding ((#))
 import Ply.Plutarch
-
-import GeniusYield.OnChain.DEX.PartialOrder
-import GeniusYield.OnChain.Plutarch.Api (PAssetClass)
-import GeniusYield.OnChain.Utils (desiredTracingMode)
-import GeniusYield.Plutonomy ()
 
 originalPartialOrderValidator :: Config -> Either Text (TypedScript 'ValidatorRole '[Address, AssetClass])
 originalPartialOrderValidator cnf = toTypedScript cnf mkPartialOrderValidator'
@@ -46,8 +44,8 @@ mkPartialOrderValidator'
            :--> PV2.PValidator
        )
 mkPartialOrderValidator' = plam $ \refInputAddr refInputToken datm redm ctx ->
-  popaque
-    $ mkPartialOrderValidator
+  popaque $
+    mkPartialOrderValidator
       # refInputAddr
       # refInputToken
       # PUNSAFE.punsafeCoerce datm

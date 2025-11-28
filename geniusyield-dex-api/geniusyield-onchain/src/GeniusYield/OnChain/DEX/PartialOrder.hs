@@ -10,75 +10,74 @@
 
 module GeniusYield.OnChain.DEX.PartialOrder (mkPartialOrderValidator) where
 
+import GeniusYield.OnChain.DEX.PartialOrder.Types (
+  PPartialOrderAction (..),
+  PPartialOrderContainedFee (PPartialOrderContainedFee),
+  PPartialOrderDatum (..),
+ )
+import GeniusYield.OnChain.DEX.Utils (
+  pcheckValidFillTime,
+  pcontinuingPartialOrder,
+  pfindFeeOutput,
+  pfindMarkedRefInput,
+  pgetContainedFeeValue,
+  pgetContainedFeeValue',
+ )
+import GeniusYield.OnChain.Plutarch.Api (
+  PAssetClass,
+  pguardC,
+  pguardC',
+  pletC,
+  pletFieldsC,
+  pmatchC,
+  ppaidValuePlusInline,
+  presolveDatum,
+  ptxSignedBy,
+  toDatum,
+ )
+import GeniusYield.OnChain.Plutarch.Utils (pceiling, pfindOwnInput, pfloor)
+import GeniusYield.OnChain.Plutarch.Value (
+  passetClass,
+  passetClassValueOf,
+  passetClassValuePositive,
+  pgeq,
+  plovelace,
+  psubtractValue,
+  pvalTotalEntries,
+ )
 import Plutarch (Term, pcon, plam, unTermCont, (#), (#$), type (:-->))
 import Plutarch.Api.V1 (PAddress, PScriptPurpose (PSpending))
 import Plutarch.Api.V1.AssocMap (plookup)
-import Plutarch.Api.V1.Value
-  ( AmountGuarantees (..)
-  , KeyGuarantees (..)
-  , PValue
-  , pforgetPositive
-  , pvalueOf
-  )
+import Plutarch.Api.V1.Value (
+  AmountGuarantees (..),
+  KeyGuarantees (..),
+  PValue,
+  pforgetPositive,
+  pvalueOf,
+ )
 import Plutarch.Api.V2 qualified as PV2
 import Plutarch.DataRepr (pdcons, pdnil, pfield)
 import Plutarch.Extra.RationalData (prationalFromData)
-import Plutarch.Prelude
-  ( PBool (..)
-  , PEq ((#==))
-  , PInteger
-  , PMaybe (..)
-  , PPair (..)
-  , PPartialOrd ((#<), (#<=))
-  , PUnit (..)
-  , getField
-  , pdata
-  , pfromData
-  , pif
-  , pmatch
-  , pnot
-  , ptraceError
-  , (#&&)
-  , (#||)
-  )
+import Plutarch.Prelude (
+  PBool (..),
+  PEq ((#==)),
+  PInteger,
+  PMaybe (..),
+  PPair (..),
+  PPartialOrd ((#<), (#<=)),
+  PUnit (..),
+  getField,
+  pdata,
+  pfromData,
+  pif,
+  pmatch,
+  pnot,
+  ptraceError,
+  (#&&),
+  (#||),
+ )
 import Plutarch.Rational qualified as PRational
 import Plutarch.Unsafe (punsafeCoerce)
-
-import GeniusYield.OnChain.DEX.PartialOrder.Types
-  ( PPartialOrderAction (..)
-  , PPartialOrderContainedFee (PPartialOrderContainedFee)
-  , PPartialOrderDatum (..)
-  )
-import GeniusYield.OnChain.DEX.Utils
-  ( pcheckValidFillTime
-  , pcontinuingPartialOrder
-  , pfindFeeOutput
-  , pfindMarkedRefInput
-  , pgetContainedFeeValue
-  , pgetContainedFeeValue'
-  )
-import GeniusYield.OnChain.Plutarch.Api
-  ( PAssetClass
-  , pguardC
-  , pguardC'
-  , pletC
-  , pletFieldsC
-  , pmatchC
-  , ppaidValuePlusInline
-  , presolveDatum
-  , ptxSignedBy
-  , toDatum
-  )
-import GeniusYield.OnChain.Plutarch.Utils (pceiling, pfindOwnInput, pfloor)
-import GeniusYield.OnChain.Plutarch.Value
-  ( passetClass
-  , passetClassValueOf
-  , passetClassValuePositive
-  , pgeq
-  , plovelace
-  , psubtractValue
-  , pvalTotalEntries
-  )
 
 mkPartialOrderValidator
   :: forall s
@@ -95,21 +94,21 @@ mkPartialOrderValidator =
   plam $ \refInputAddr refInputToken od oa ctx -> unTermCont $ do
     odFs <-
       pletFieldsC
-        @[ "podOwnerKey"
-         , "podOwnerAddr"
-         , "podOfferedAsset"
-         , "podOfferedOriginalAmount"
-         , "podOfferedAmount"
-         , "podAskedAsset"
-         , "podPrice"
-         , "podNFT"
-         , "podStart"
-         , "podEnd"
-         , "podPartialFills"
-         , "podMakerLovelaceFlatFee"
-         , "podTakerLovelaceFlatFee"
-         , "podContainedFee"
-         , "podContainedPayment"
+        @[ "podOwnerKey",
+           "podOwnerAddr",
+           "podOfferedAsset",
+           "podOfferedOriginalAmount",
+           "podOfferedAmount",
+           "podAskedAsset",
+           "podPrice",
+           "podNFT",
+           "podStart",
+           "podEnd",
+           "podPartialFills",
+           "podMakerLovelaceFlatFee",
+           "podTakerLovelaceFlatFee",
+           "podContainedFee",
+           "podContainedPayment"
          ]
         od
 
@@ -120,13 +119,13 @@ mkPartialOrderValidator =
 
     info <-
       pletFieldsC
-        @[ "inputs"
-         , "referenceInputs"
-         , "outputs"
-         , "mint"
-         , "validRange"
-         , "signatories"
-         , "datums"
+        @[ "inputs",
+           "referenceInputs",
+           "outputs",
+           "mint",
+           "validRange",
+           "signatories",
+           "datums"
          ]
         $ getField @"txInfo" ctxFs
 
@@ -138,8 +137,8 @@ mkPartialOrderValidator =
     markedRefDatum <- pletC $ pfindMarkedRefInput # getField @"referenceInputs" info # refInputAddr # refInputToken
     markedRefDatumFs <-
       pletFieldsC
-        @'[ "pocdNftSymbol"
-          , "pocdFeeAddr"
+        @'[ "pocdNftSymbol",
+            "pocdFeeAddr"
           ]
         markedRefDatum
     nftSymbol <- pletC $ getField @"pocdNftSymbol" markedRefDatumFs
@@ -160,12 +159,12 @@ mkPartialOrderValidator =
     curContainedFee :: Term _ PPartialOrderContainedFee <-
       pletC $ getField @"podContainedFee" odFs
     (priceInteger :: Term s (PInteger :--> PInteger)) <-
-      pletC
-        $ plam
-        $ \amt ->
-          pceiling
-            #$ (PRational.pfromInteger # amt)
-            * (prationalFromData # podPrice)
+      pletC $
+        plam $
+          \amt ->
+            pceiling
+              #$ (PRational.pfromInteger # amt)
+              * (prationalFromData # podPrice)
 
     -- \| Note that at any moment, an order UTxO contains:-
     --               * An NFT.
@@ -175,18 +174,18 @@ mkPartialOrderValidator =
     --               * Collected fees.
     --
     curPaymentWithDeposit :: Term s (PValue 'Sorted 'Positive :--> PValue 'Sorted 'NoGuarantees) <-
-      pletC
-        $ plam
-        $ \contFeeVal ->
-          let toSubtract = (passetClassValuePositive # (passetClass # nftSymbol # nftTkName) # pdata 1) <> (passetClassValuePositive # offAC # pdata offeredAmount) <> contFeeVal
-          in -- In above, @contFeeVal@ is simply @pgetContainedFeeValue # curContainedFee # offAC # askAC@ but in case @curContainedFee@ is already destructured, it might be more efficient to construct value using destructured components and send it instead.
-             -- For complete fill case, one should also add payment for consumed tokens to know for outgoing payment.
-             psubtractValue # valueIn # toSubtract
+      pletC $
+        plam $
+          \contFeeVal ->
+            let toSubtract = (passetClassValuePositive # (passetClass # nftSymbol # nftTkName) # pdata 1) <> (passetClassValuePositive # offAC # pdata offeredAmount) <> contFeeVal
+             in -- In above, @contFeeVal@ is simply @pgetContainedFeeValue # curContainedFee # offAC # askAC@ but in case @curContainedFee@ is already destructured, it might be more efficient to construct value using destructured components and send it instead.
+                -- For complete fill case, one should also add payment for consumed tokens to know for outgoing payment.
+                psubtractValue # valueIn # toSubtract
 
     pmatchC oa >>= \case
       PPartialCancel _ -> do
-        pguardC "not signed by owner"
-          $ ptxSignedBy
+        pguardC "not signed by owner" $
+          ptxSignedBy
             # getField @"podOwnerKey" odFs
             # getField @"signatories" info
         pguardC "NFT not burnt" $ nftMintAmt #== -1
@@ -201,8 +200,8 @@ mkPartialOrderValidator =
           expectedPayment = curPaymentWithDeposit # (pgetContainedFeeValue' # offAC # askAC # feeLov # feeOff # feeAsk)
           actualPayment = ppaidValuePlusInline # ownRef # ownerAddr # datums # outputs
 
-        pguardC "insufficient payment"
-          $ pgeq # pforgetPositive actualPayment # expectedPayment
+        pguardC "insufficient payment" $
+          pgeq # pforgetPositive actualPayment # expectedPayment
 
         (partialFills :: Term _ PInteger) <- pletC $ getField @"podPartialFills" odFs
         pmatchC (partialFills #== 0 #|| curContainedFee #== mempty) >>= \case
@@ -227,7 +226,7 @@ mkPartialOrderValidator =
                     let
                       originalOfferedAmount :: Term _ PInteger = getField @"podOfferedOriginalAmount" odFs
                       feeToRefund = pfloor #$ (PRational.pfromInteger # offeredAmount) * pcon (PRational.PRational (pfromData feeOff) (punsafeCoerce originalOfferedAmount)) -- We are using `punsafeCoerce` instead of `ptryPositive` as our NFT policy checks that original offered amount is positive.
-                    in
+                     in
                       ((pgetContainedFeeValue' # offAC # askAC # feeLov # pdata (pfromData feeOff - feeToRefund) # feeAsk) #<= mentionedFee)
 
             pure . pcon $ PUnit
@@ -243,8 +242,8 @@ mkPartialOrderValidator =
         let
           expectedPayment = (curPaymentWithDeposit # curContainedFeeValue) <> pforgetPositive (passetClassValuePositive # askAC # pdata (priceInteger # offeredAmount))
           actualPayment = ppaidValuePlusInline # ownRef # ownerAddr # datums # outputs
-        pguardC "insufficient payment"
-          $ pgeq # pforgetPositive actualPayment # expectedPayment
+        pguardC "insufficient payment" $
+          pgeq # pforgetPositive actualPayment # expectedPayment
 
         -- We must check that the fees are paid.
         -- They consist of the contained fees and the taker fee.
@@ -279,9 +278,9 @@ mkPartialOrderValidator =
 
         oldContainedFeeHRec <-
           pletFieldsC
-            @[ "pocfLovelaces"
-             , "pocfOfferedTokens"
-             , "pocfAskedTokens"
+            @[ "pocfLovelaces",
+               "pocfOfferedTokens",
+               "pocfAskedTokens"
              ]
             curContainedFee
         oldContainedFeeLov <- pletC $ getField @"pocfLovelaces" oldContainedFeeHRec
@@ -313,8 +312,8 @@ mkPartialOrderValidator =
               price <- pletC $ passetClassValuePositive # askAC # pdata priceInteger'
               sold <- pletC $ passetClassValuePositive # offAC # pdata amt
               v <- pletC $ pforgetPositive price <> (psubtractValue # pforgetPositive valueIn # sold)
-              pure
-                $ pif
+              pure $
+                pif
                   (isFirst #&& pnot # hasFeeOutput)
                   -- taker fee must be included in our continuing output
                   (pcon $ PPair (v <> pforgetPositive takerFee) (pdata $ pfromData oldContainedFeeLov + pfromData takerFeeInt))
@@ -331,49 +330,49 @@ mkPartialOrderValidator =
             additionalAskTokens <- pletC $ passetClassValueOf # diffActualExpectedValue # askAC
             additionalLovelaces <- pletC $ pif (askAC #== plovelace) 0 (passetClassValueOf # diffActualExpectedValue # plovelace)
             let newContainedFeeDat =
-                  pcon
-                    $ PPartialOrderContainedFee
-                    $ pdcons @"pocfLovelaces"
-                      # pdata (pfromData newContainedFeeLov + additionalLovelaces)
-                      #$ pdcons @"pocfOfferedTokens"
-                      # oldContainedFeeOff
-                      #$ pdcons @"pocfAskedTokens"
-                      # pdata (oldContainedFeeAsk + additionalAskTokens)
-                      #$ pdnil
+                  pcon $
+                    PPartialOrderContainedFee $
+                      pdcons @"pocfLovelaces"
+                        # pdata (pfromData newContainedFeeLov + additionalLovelaces)
+                        #$ pdcons @"pocfOfferedTokens"
+                        # oldContainedFeeOff
+                        #$ pdcons @"pocfAskedTokens"
+                        # pdata (oldContainedFeeAsk + additionalAskTokens)
+                        #$ pdnil
             let expectedDatum =
-                  pcon
-                    $ PPartialOrderDatum
-                    $ pdcons @"podOwnerKey"
-                      # getField @"podOwnerKey" odFs
-                      #$ pdcons @"podOwnerAddr"
-                      # pdata ownerAddr
-                      #$ pdcons @"podOfferedAsset"
-                      # pdata offAC
-                      #$ pdcons @"podOfferedOriginalAmount"
-                      # getField @"podOfferedOriginalAmount" odFs
-                      #$ pdcons @"podOfferedAmount"
-                      # pdata (offeredAmount - amt)
-                      #$ pdcons @"podAskedAsset"
-                      # pdata askAC
-                      #$ pdcons @"podPrice"
-                      # pdata podPrice
-                      #$ pdcons @"podNFT"
-                      # pdata nftTkName
-                      #$ pdcons @"podStart"
-                      # getField @"podStart" odFs
-                      #$ pdcons @"podEnd"
-                      # getField @"podEnd" odFs
-                      #$ pdcons @"podPartialFills"
-                      # pdata (getField @"podPartialFills" odFs + 1)
-                      #$ pdcons @"podMakerLovelaceFlatFee"
-                      # getField @"podMakerLovelaceFlatFee" odFs
-                      #$ pdcons @"podTakerLovelaceFlatFee"
-                      # takerFeeInt
-                      #$ pdcons @"podContainedFee"
-                      # pdata newContainedFeeDat
-                      #$ pdcons @"podContainedPayment"
-                      # pdata newContainedPayment
-                      #$ pdnil
+                  pcon $
+                    PPartialOrderDatum $
+                      pdcons @"podOwnerKey"
+                        # getField @"podOwnerKey" odFs
+                        #$ pdcons @"podOwnerAddr"
+                        # pdata ownerAddr
+                        #$ pdcons @"podOfferedAsset"
+                        # pdata offAC
+                        #$ pdcons @"podOfferedOriginalAmount"
+                        # getField @"podOfferedOriginalAmount" odFs
+                        #$ pdcons @"podOfferedAmount"
+                        # pdata (offeredAmount - amt)
+                        #$ pdcons @"podAskedAsset"
+                        # pdata askAC
+                        #$ pdcons @"podPrice"
+                        # pdata podPrice
+                        #$ pdcons @"podNFT"
+                        # pdata nftTkName
+                        #$ pdcons @"podStart"
+                        # getField @"podStart" odFs
+                        #$ pdcons @"podEnd"
+                        # getField @"podEnd" odFs
+                        #$ pdcons @"podPartialFills"
+                        # pdata (getField @"podPartialFills" odFs + 1)
+                        #$ pdcons @"podMakerLovelaceFlatFee"
+                        # getField @"podMakerLovelaceFlatFee" odFs
+                        #$ pdcons @"podTakerLovelaceFlatFee"
+                        # takerFeeInt
+                        #$ pdcons @"podContainedFee"
+                        # pdata newContainedFeeDat
+                        #$ pdcons @"podContainedPayment"
+                        # pdata newContainedPayment
+                        #$ pdnil
 
             pguardC
               "insufficient value in continuing output"

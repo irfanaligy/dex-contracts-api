@@ -1,18 +1,16 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module GeniusYield.OnChain.Core.Common.Crypto
-  ( SignedMessage (..)
-  , Signature
-  , PubKey
-  , PaymentPubKey
-  , ScriptHash
-  )
-where
+module GeniusYield.OnChain.Core.Common.Crypto (
+  SignedMessage (..),
+  Signature,
+  PubKey,
+  PaymentPubKey,
+  ScriptHash,
+) where
 
 import GHC.Generics
-import PlutusTx qualified
-
 import GeniusYield.OnChain.Core.Common.LedgerExports.Common
+import PlutusTx qualified
 
 type Signature = BuiltinByteString
 
@@ -21,10 +19,10 @@ type PubKey = LedgerBytes
 type PaymentPubKey = PubKey
 
 data SignedMessage a = SignedMessage
-  { smSignature :: Signature
-  -- ^ The cryptographic signature.
-  , smMessageHash :: DatumHash
-  -- ^ The hash of the message.
+  { -- | The cryptographic signature.
+    smSignature :: Signature,
+    -- | The hash of the message.
+    smMessageHash :: DatumHash
   }
   deriving (Generic, Show)
 

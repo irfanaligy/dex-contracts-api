@@ -1,11 +1,12 @@
-module GeniusYield.OnChain.TokenSale.SalePhaseToken.Compiled
-  ( originalSalePhaseTokenPolicy
-  , optimizedSalePhaseTokenPolicy
-  )
-where
+module GeniusYield.OnChain.TokenSale.SalePhaseToken.Compiled (
+  originalSalePhaseTokenPolicy,
+  optimizedSalePhaseTokenPolicy,
+) where
 
 import Data.Default (Default (def))
 import Data.Text (Text)
+import GeniusYield.OnChain.TokenSale.SalePhaseToken
+import GeniusYield.Plutonomy ()
 import Plutarch.Api.V1
 import Plutarch.Api.V2 qualified as PV2
 import Plutarch.Prelude
@@ -13,9 +14,6 @@ import Plutonomy qualified
 import PlutusLedgerApi.V1
 import Ply hiding ((#))
 import Ply.Plutarch (toTypedScript)
-
-import GeniusYield.OnChain.TokenSale.SalePhaseToken
-import GeniusYield.Plutonomy ()
 
 -- originalSalePhaseTokenPolicy :: TokenName -> POSIXTime -> POSIXTime -> Address -> Plutonomy.MintingPolicy
 -- originalSalePhaseTokenPolicy tn s t a =
@@ -29,10 +27,10 @@ originalSalePhaseTokenPolicy
        Text
        ( TypedScript
            'MintingPolicyRole
-           [ TokenName
-           , POSIXTime
-           , POSIXTime
-           , Address
+           [ TokenName,
+             POSIXTime,
+             POSIXTime,
+             Address
            ]
        )
 originalSalePhaseTokenPolicy = toTypedScript def mkSalePhaseTokenPolicy'
@@ -55,8 +53,8 @@ mkSalePhaseTokenPolicy'
            :--> PV2.PMintingPolicy
        )
 mkSalePhaseTokenPolicy' = plam $ \tn startT endT addr _ ctx ->
-  popaque
-    $ mkSalePhaseTokenPolicy
+  popaque $
+    mkSalePhaseTokenPolicy
       # tn
       # startT
       # endT

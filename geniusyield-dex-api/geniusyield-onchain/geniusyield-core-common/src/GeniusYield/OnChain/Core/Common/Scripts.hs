@@ -1,22 +1,21 @@
-module GeniusYield.OnChain.Core.Common.Scripts
-  ( dex'NFTFile
-  , dex'PartialOrderFile
-  , dex'PartialOrderFileTracing
-  , dex'PartialOrderNFTFile
-  , dex'PartialOrderNFTFileTracing
-  , dex'PartialOrderNFTV1_1File
-  , dex'PartialOrderNFTV1_1FileTracing
-  , dex'PartialOrderConfigFile
-  , dex'PartialOrderConfigFileTracing
-  , dex'TwoWayOrderConfigFile
-  , dex'TwoWayOrderConfigFileTracing
-  , staking'StakeFile
-  , staking'OldStakeFile
-  , tokenSale'OrderFile
-  , tokenSale'SalePhaseTokenFile
-  , signedMintFile
-  )
-where
+module GeniusYield.OnChain.Core.Common.Scripts (
+  dex'NFTFile,
+  dex'PartialOrderFile,
+  dex'PartialOrderFileTracing,
+  dex'PartialOrderNFTFile,
+  dex'PartialOrderNFTFileTracing,
+  dex'PartialOrderNFTV1_1File,
+  dex'PartialOrderNFTV1_1FileTracing,
+  dex'PartialOrderConfigFile,
+  dex'PartialOrderConfigFileTracing,
+  dex'TwoWayOrderConfigFile,
+  dex'TwoWayOrderConfigFileTracing,
+  staking'StakeFile,
+  staking'OldStakeFile,
+  tokenSale'OrderFile,
+  tokenSale'SalePhaseTokenFile,
+  signedMintFile,
+) where
 
 dex'NFTFile :: FilePath
 dex'NFTFile = "DEX.NFT"

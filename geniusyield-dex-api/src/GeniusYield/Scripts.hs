@@ -1,33 +1,30 @@
-module GeniusYield.Scripts
-  ( GYCompiledScripts (..)
-  , GYCompiledScriptsRaw
-  , mkCompiledScripts
-  , mkGYScripts
+module GeniusYield.Scripts (
+  GYCompiledScripts (..),
+  GYCompiledScriptsRaw,
+  mkCompiledScripts,
+  mkGYScripts,
   -- , sptPolicyId
   -- , sptSymbol
   -- , spt
   -- , stakeAddress
-  , nftMintingPolicyId
-  , readCompiledScripts
-  , validatorFromPly
-  , mintingPolicyFromPly
-  )
-where
-
-import GeniusYield.Types
+  nftMintingPolicyId,
+  readCompiledScripts,
+  validatorFromPly,
+  mintingPolicyFromPly,
+) where
 
 import GeniusYield.Scripts.DEX (POCVersion)
 import GeniusYield.Scripts.DEX qualified as DEX
 import GeniusYield.Scripts.Internal
+import GeniusYield.Types
 
 -- should we put Aiken scripts here as well???
 data GYCompiledScripts = GYCompiledScripts
-  {
-    dexPartialOrderValidator :: !(POCVersion -> GYAssetClass -> GYScript PlutusV2)
-  , dexPartialOrderNftPolicy :: !(POCVersion -> GYAssetClass -> GYScript PlutusV2)
-  , dexPartialOrderConfigValidator :: !(POCVersion -> GYAssetClass -> GYScript PlutusV2)
-  , dexNftPolicy :: !(GYScript PlutusV2)
-  , dexTwoWayOrderConfigValidator :: !(GYAssetClass -> GYScript PlutusV2)
+  { dexPartialOrderValidator :: !(POCVersion -> GYAssetClass -> GYScript PlutusV2),
+    dexPartialOrderNftPolicy :: !(POCVersion -> GYAssetClass -> GYScript PlutusV2),
+    dexPartialOrderConfigValidator :: !(POCVersion -> GYAssetClass -> GYScript PlutusV2),
+    dexNftPolicy :: !(GYScript PlutusV2),
+    dexTwoWayOrderConfigValidator :: !(GYAssetClass -> GYScript PlutusV2)
   }
 
 -- | 'GYScripts' constructor
@@ -36,13 +33,13 @@ mkGYScripts
   -> DEX.GYScripts
 mkGYScripts
   GYCompiledScripts
-    { dexPartialOrderValidator
-    , dexPartialOrderNftPolicy
+    { dexPartialOrderValidator,
+      dexPartialOrderNftPolicy
     } =
     DEX.GYScripts
-      { gyPartialOrderValidator = dexPartialOrderValidator
-      , gyPartialOrderNFTPolicy = dexPartialOrderNftPolicy
-      , gyPartialOrderNFTPolicyId = \pocVersion -> mintingPolicyId . dexPartialOrderNftPolicy pocVersion
+      { gyPartialOrderValidator = dexPartialOrderValidator,
+        gyPartialOrderNFTPolicy = dexPartialOrderNftPolicy,
+        gyPartialOrderNFTPolicyId = \pocVersion -> mintingPolicyId . dexPartialOrderNftPolicy pocVersion
       }
 
 instance Show GYCompiledScripts where
@@ -55,12 +52,11 @@ readCompiledScripts = mkCompiledScripts <$> readCompiledScriptsRaw
 mkCompiledScripts :: GYCompiledScriptsRaw -> GYCompiledScripts
 mkCompiledScripts gycs =
   GYCompiledScripts
-    {
-      dexPartialOrderValidator = DEX.partialOrderValidator gycs
-    , dexPartialOrderNftPolicy = DEX.partialOrderNftMintingPolicy gycs
-    , dexPartialOrderConfigValidator = DEX.partialOrderConfigValidator gycs
-    , dexNftPolicy = DEX.nftMintingPolicy gycs
-    , dexTwoWayOrderConfigValidator = DEX.twoWayOrderConfigValidator gycs
+    { dexPartialOrderValidator = DEX.partialOrderValidator gycs,
+      dexPartialOrderNftPolicy = DEX.partialOrderNftMintingPolicy gycs,
+      dexPartialOrderConfigValidator = DEX.partialOrderConfigValidator gycs,
+      dexNftPolicy = DEX.nftMintingPolicy gycs,
+      dexTwoWayOrderConfigValidator = DEX.twoWayOrderConfigValidator gycs
     }
 
 nftMintingPolicyId :: GYCompiledScripts -> GYMintingPolicyId

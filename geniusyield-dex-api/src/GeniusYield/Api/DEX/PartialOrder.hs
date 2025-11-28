@@ -1,69 +1,68 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 
-module GeniusYield.Api.DEX.PartialOrder
-  ( PORef (..)
-  , PORefs (..)
+module GeniusYield.Api.DEX.PartialOrder (
+  PORef (..),
+  PORefs (..),
 
-    -- * PartialOrderInfo
-  , PartialOrderInfo (..)
-  , POIContainedFee (..)
-  , selectPor
-  , selectPor'
-  , partialOrderInfoToIn
-  , partialOrderInfoToPayment
-  , partialOrderInfoToPartialOrderDatum
-  , poiGetContainedFeeValue
-  , poiContainedFeeToValue
-  , expectedPaymentWithDeposit
+  -- * PartialOrderInfo
+  PartialOrderInfo (..),
+  POIContainedFee (..),
+  selectPor,
+  selectPor',
+  partialOrderInfoToIn,
+  partialOrderInfoToPayment,
+  partialOrderInfoToPartialOrderDatum,
+  poiGetContainedFeeValue,
+  poiContainedFeeToValue,
+  expectedPaymentWithDeposit,
 
-    -- * Redeemer & Datum
-  , PartialOrderAction (..)
-  , PartialOrderDatum (..)
+  -- * Redeemer & Datum
+  PartialOrderAction (..),
+  PartialOrderDatum (..),
 
-    -- * Partial order NFT policy
-  , partialOrderNftPolicy
-  , partialOrderNftPolicyId
+  -- * Partial order NFT policy
+  partialOrderNftPolicy,
+  partialOrderNftPolicyId,
 
-    -- * Queries
-  , partialOrders
-  , partialOrdersHavingAsset
-  , partialOrdersWithTransformerPredicate
-  , orderByNft
-  , getPartialOrderVersion
-  , getPartialOrderVersion'
-  , getPartialOrderInfo
-  , getPartialOrdersInfos
-  , getPartialOrdersInfos'
+  -- * Queries
+  partialOrders,
+  partialOrdersHavingAsset,
+  partialOrdersWithTransformerPredicate,
+  orderByNft,
+  getPartialOrderVersion,
+  getPartialOrderVersion',
+  getPartialOrderInfo,
+  getPartialOrdersInfos,
+  getPartialOrdersInfos',
 
-    -- * Tx constructors
-  , placePartialOrder
-  , placePartialOrderWithVersion
-  , placePartialOrder'
-  , placePartialOrderWithVersion'
-  , completelyFillPartialOrder
-  , mkSkeletonCompletelyFillPartialOrder
-  , partiallyFillPartialOrder
-  , mkSkeletonPartiallyFillPartialOrder
-  , fillPartialOrder
-  , fillPartialOrder'
-  , fillMultiplePartialOrders
-  , completelyFillMultiplePartialOrders
-  , fillMultiplePartialOrders'
-  , cancelPartialOrder
-  , cancelMultiplePartialOrders
-  , cancelMultiplePartialOrders'
+  -- * Tx constructors
+  placePartialOrder,
+  placePartialOrderWithVersion,
+  placePartialOrder',
+  placePartialOrderWithVersion',
+  completelyFillPartialOrder,
+  mkSkeletonCompletelyFillPartialOrder,
+  partiallyFillPartialOrder,
+  mkSkeletonPartiallyFillPartialOrder,
+  fillPartialOrder,
+  fillPartialOrder',
+  fillMultiplePartialOrders,
+  completelyFillMultiplePartialOrders,
+  fillMultiplePartialOrders',
+  cancelPartialOrder,
+  cancelMultiplePartialOrders,
+  cancelMultiplePartialOrders',
 
-    -- * Utilities
-  , partialOrderAddr
-  , partialOrderPrice
-  , partialOrderPrice'
-  , roundFunctionForPOCVersion
-  , getVersionsInOrders
-  , preferentiallySelectLatestVersion
-  , preferentiallySelectLatestPocd
-  )
-where
+  -- * Utilities
+  partialOrderAddr,
+  partialOrderPrice,
+  partialOrderPrice',
+  roundFunctionForPOCVersion,
+  getVersionsInOrders,
+  preferentiallySelectLatestVersion,
+  preferentiallySelectLatestPocd,
+) where
 
 import Control.Monad.Reader (ask)
 import Data.Bifunctor (Bifunctor)
@@ -76,36 +75,35 @@ import Data.Set qualified as Set
 import Data.Strict.Tuple (Pair (..), (:!:))
 import Data.Swagger qualified as Swagger
 import Data.Text qualified as Txt
+import GeniusYield.Api.DEX.Exceptions
+import GeniusYield.Api.DEX.PartialOrderConfig (
+  PORef (..),
+  PORefs (..),
+  RefPocd (..),
+  RefPocds,
+  SomePORef (..),
+  SomeRefPocd (..),
+  fetchPartialOrderConfig,
+  fetchPartialOrderConfigs,
+  selectPor,
+  selectPor',
+  selectRefPocd,
+  selectV1RefPocd,
+  selectV1_1RefPocd,
+  withSomePORef,
+ )
+import GeniusYield.Api.DEX.Utils (stampCancel, stampFilled, stampPlaced)
+import GeniusYield.Api.Types
 import GeniusYield.HTTP.Errors
 import GeniusYield.Imports
+import GeniusYield.Scripts
+import GeniusYield.Scripts.DEX
+import GeniusYield.Scripts.DEX.Version (defaultPOCVersion)
 import GeniusYield.TxBuilder
 import GeniusYield.Types
 import Network.HTTP.Types.Status
 import PlutusTx.AssocMap qualified as PlutusTx
 import PlutusTx.Ratio qualified as PlutusTx
-
-import GeniusYield.Api.DEX.Exceptions
-import GeniusYield.Api.DEX.PartialOrderConfig
-  ( PORef (..)
-  , PORefs (..)
-  , RefPocd (..)
-  , RefPocds
-  , SomePORef (..)
-  , SomeRefPocd (..)
-  , fetchPartialOrderConfig
-  , fetchPartialOrderConfigs
-  , selectPor
-  , selectPor'
-  , selectRefPocd
-  , selectV1RefPocd
-  , selectV1_1RefPocd
-  , withSomePORef
-  )
-import GeniusYield.Api.DEX.Utils (stampCancel, stampFilled, stampPlaced)
-import GeniusYield.Api.Types
-import GeniusYield.Scripts
-import GeniusYield.Scripts.DEX
-import GeniusYield.Scripts.DEX.Version (defaultPOCVersion)
 
 data PodException
   = PodNftNotAvailable
@@ -127,69 +125,69 @@ data PodException
       -- ^ Missing output refs.
   | -- | Such an order does not belong to supported swap script credentials.
     PodOrderDoesntBelongToScript !GYTxOutRef
-  deriving stock Show
-  deriving anyclass Exception
+  deriving stock (Show)
+  deriving anyclass (Exception)
 
 instance IsGYApiError PodException where
   toApiError PodNftNotAvailable =
     GYApiError
-      { gaeErrorCode = "NFT_NOT_AVAILABLE"
-      , gaeHttpStatus = status400
-      , gaeMsg = Txt.pack "Nft Not Available"
+      { gaeErrorCode = "NFT_NOT_AVAILABLE",
+        gaeHttpStatus = status400,
+        gaeMsg = Txt.pack "Nft Not Available"
       }
   toApiError (PodNonPositiveAmount amt) =
     GYApiError
-      { gaeErrorCode = "NON_POSITIVE_AMOUNT"
-      , gaeHttpStatus = status400
-      , gaeMsg = Txt.pack $ "Amount was :  " ++ show amt
+      { gaeErrorCode = "NON_POSITIVE_AMOUNT",
+        gaeHttpStatus = status400,
+        gaeMsg = Txt.pack $ "Amount was :  " ++ show amt
       }
   toApiError (PodNonPositivePrice price) =
     GYApiError
-      { gaeErrorCode = "NON_POSITIVE_PRICE"
-      , gaeHttpStatus = status400
-      , gaeMsg = Txt.pack $ "Price was:  " ++ show price
+      { gaeErrorCode = "NON_POSITIVE_PRICE",
+        gaeHttpStatus = status400,
+        gaeMsg = Txt.pack $ "Price was:  " ++ show price
       }
   toApiError (PodRequestedAmountGreaterOrEqualToOfferedAmount reqAmt offeredAmt) =
     GYApiError
-      { gaeErrorCode = "REQUESTED_AMOUNT_GREATER_OR_EQUAL_TO_OFFERED_AMOUNT"
-      , gaeHttpStatus = status400
-      , gaeMsg = Txt.pack $ printf "Requested Amount was: %s but offered amount is %s" (show reqAmt) (show offeredAmt)
+      { gaeErrorCode = "REQUESTED_AMOUNT_GREATER_OR_EQUAL_TO_OFFERED_AMOUNT",
+        gaeHttpStatus = status400,
+        gaeMsg = Txt.pack $ printf "Requested Amount was: %s but offered amount is %s" (show reqAmt) (show offeredAmt)
       }
   toApiError (PodRequestedAmountGreaterThanOfferedAmount reqAmt offeredAmt) =
     GYApiError
-      { gaeErrorCode = "REQUESTED_AMOUNT_GREATER_THAN_OFFERED_AMOUNT"
-      , gaeHttpStatus = status400
-      , gaeMsg = Txt.pack $ printf "Requested Amount was: %s but offered amount is %s" (show reqAmt) (show offeredAmt)
+      { gaeErrorCode = "REQUESTED_AMOUNT_GREATER_THAN_OFFERED_AMOUNT",
+        gaeHttpStatus = status400,
+        gaeMsg = Txt.pack $ printf "Requested Amount was: %s but offered amount is %s" (show reqAmt) (show offeredAmt)
       }
   toApiError (PodNonDifferentAssets offeredAsset) =
     GYApiError
-      { gaeErrorCode = "NOT_DIFFERENT_OFFERED_ASKED_ASSET"
-      , gaeHttpStatus = status400
-      , gaeMsg = Txt.pack $ "Offered asset is same as asked asset, which is: " ++ show offeredAsset
+      { gaeErrorCode = "NOT_DIFFERENT_OFFERED_ASKED_ASSET",
+        gaeHttpStatus = status400,
+        gaeMsg = Txt.pack $ "Offered asset is same as asked asset, which is: " ++ show offeredAsset
       }
   toApiError (PodEndEarlierThanStart startTime endTime) =
     GYApiError
-      { gaeErrorCode = "END_EARLIER_THAN_START"
-      , gaeHttpStatus = status400
-      , gaeMsg = Txt.pack $ "End time is earlier than start. Start time: " ++ show startTime ++ ", end time: " ++ show endTime
+      { gaeErrorCode = "END_EARLIER_THAN_START",
+        gaeHttpStatus = status400,
+        gaeMsg = Txt.pack $ "End time is earlier than start. Start time: " ++ show startTime ++ ", end time: " ++ show endTime
       }
   toApiError (PodNegativeFrontendFee fee) =
     GYApiError
-      { gaeErrorCode = "NEGATIVE_FRONTEND_FEE"
-      , gaeHttpStatus = status400
-      , gaeMsg = Txt.pack $ "Negative frontend fee: " ++ show fee
+      { gaeErrorCode = "NEGATIVE_FRONTEND_FEE",
+        gaeHttpStatus = status400,
+        gaeMsg = Txt.pack $ "Negative frontend fee: " ++ show fee
       }
   toApiError (PodNotAllOrderRefsPresent missingRefs) =
     GYApiError
-      { gaeErrorCode = "MISSING_REFS"
-      , gaeHttpStatus = status400
-      , gaeMsg = Txt.pack $ "Not all of given references are present, missing ones: " ++ show missingRefs
+      { gaeErrorCode = "MISSING_REFS",
+        gaeHttpStatus = status400,
+        gaeMsg = Txt.pack $ "Not all of given references are present, missing ones: " ++ show missingRefs
       }
   toApiError (PodOrderDoesntBelongToScript ref) =
     GYApiError
-      { gaeErrorCode = "ORDER_DOESNT_BELONG_TO_SCRIPT"
-      , gaeHttpStatus = status400
-      , gaeMsg = Txt.pack $ "Order doesn't belong to supported swap script credentials: " ++ show ref
+      { gaeErrorCode = "ORDER_DOESNT_BELONG_TO_SCRIPT",
+        gaeHttpStatus = status400,
+        gaeMsg = Txt.pack $ "Order doesn't belong to supported swap script credentials: " ++ show ref
       }
 
 -------------------------------------------------------------------------------
@@ -197,103 +195,103 @@ instance IsGYApiError PodException where
 -------------------------------------------------------------------------------
 
 data POIContainedFee = POIContainedFee
-  { poifLovelaces :: !Natural
-  , poifOfferedTokens :: !Natural
-  , poifAskedTokens :: !Natural
+  { poifLovelaces :: !Natural,
+    poifOfferedTokens :: !Natural,
+    poifAskedTokens :: !Natural
   }
   deriving stock (Eq, Generic, Show)
-  deriving anyclass Swagger.ToSchema
+  deriving anyclass (Swagger.ToSchema)
 
 instance Semigroup POIContainedFee where
   (<>) a b =
     POIContainedFee
-      { poifLovelaces = poifLovelaces a + poifLovelaces b
-      , poifOfferedTokens = poifOfferedTokens a + poifOfferedTokens b
-      , poifAskedTokens = poifAskedTokens a + poifAskedTokens b
+      { poifLovelaces = poifLovelaces a + poifLovelaces b,
+        poifOfferedTokens = poifOfferedTokens a + poifOfferedTokens b,
+        poifAskedTokens = poifAskedTokens a + poifAskedTokens b
       }
 
 instance Monoid POIContainedFee where mempty = POIContainedFee 0 0 0
 
 data PartialOrderInfo = PartialOrderInfo
-  { poiRef :: !GYTxOutRef
-  -- ^ Reference to the partial order.
-  , poiOwnerKey :: !GYPubKeyHash
-  -- ^ Public key hash of the owner.
-  , poiOwnerAddr :: !GYAddress
-  -- ^ Address of the owner.
-  , poiOfferedAsset :: !GYAssetClass
-  -- ^ The asset being offered.
-  , poiOfferedOriginalAmount :: !Natural
-  -- ^ The number of units originally offered.
-  , poiOfferedAmount :: !Natural
-  -- ^ The number of units being offered.
-  , poiAskedAsset :: !GYAssetClass
-  -- ^ The asset being asked for as payment.
-  , poiPrice :: !GYRational
-  -- ^ The price for one unit of the offered asset.
-  , poiNFT :: !GYTokenName
-  -- ^ Token name of the NFT identifying this partial order.
-  , poiStart :: !(Maybe GYTime)
-  -- ^ The time when the order can earliest be filled (optional).
-  , poiEnd :: !(Maybe GYTime)
-  -- ^ The time when the order can latest be filled (optional).
-  , poiPartialFills :: !Natural
-  -- ^ The number of past partial fills.
-  , poiMakerLovelaceFlatFee :: !Natural
-  -- ^ Flat fee (in lovelace) paid by the taker.
-  , poiTakerLovelaceFlatFee :: !Natural
-  -- ^ Flat fee (in lovelace) paid by the taker.
-  , poiContainedFee :: !POIContainedFee
-  -- ^ Fee contained in the order.
-  , poiContainedPayment :: !Natural
-  -- ^ Payment (in asked asset) contained in the order.
-  , poiUTxOValue :: !GYValue
-  -- ^ Total value in the UTxO.
-  , poiUTxOAddr :: !GYAddress
-  -- ^ Address of the order UTxO.
-  , poiNFTCS :: !GYMintingPolicyId
-  -- ^ Caching the CS to avoid recalculating for it.
-  , poiVersion :: !POCVersion
-  -- ^ Version of the partial order.
-  , poiRawDatum :: !GYDatum
-  -- ^ Original raw datum.
+  { -- | Reference to the partial order.
+    poiRef :: !GYTxOutRef,
+    -- | Public key hash of the owner.
+    poiOwnerKey :: !GYPubKeyHash,
+    -- | Address of the owner.
+    poiOwnerAddr :: !GYAddress,
+    -- | The asset being offered.
+    poiOfferedAsset :: !GYAssetClass,
+    -- | The number of units originally offered.
+    poiOfferedOriginalAmount :: !Natural,
+    -- | The number of units being offered.
+    poiOfferedAmount :: !Natural,
+    -- | The asset being asked for as payment.
+    poiAskedAsset :: !GYAssetClass,
+    -- | The price for one unit of the offered asset.
+    poiPrice :: !GYRational,
+    -- | Token name of the NFT identifying this partial order.
+    poiNFT :: !GYTokenName,
+    -- | The time when the order can earliest be filled (optional).
+    poiStart :: !(Maybe GYTime),
+    -- | The time when the order can latest be filled (optional).
+    poiEnd :: !(Maybe GYTime),
+    -- | The number of past partial fills.
+    poiPartialFills :: !Natural,
+    -- | Flat fee (in lovelace) paid by the taker.
+    poiMakerLovelaceFlatFee :: !Natural,
+    -- | Flat fee (in lovelace) paid by the taker.
+    poiTakerLovelaceFlatFee :: !Natural,
+    -- | Fee contained in the order.
+    poiContainedFee :: !POIContainedFee,
+    -- | Payment (in asked asset) contained in the order.
+    poiContainedPayment :: !Natural,
+    -- | Total value in the UTxO.
+    poiUTxOValue :: !GYValue,
+    -- | Address of the order UTxO.
+    poiUTxOAddr :: !GYAddress,
+    -- | Caching the CS to avoid recalculating for it.
+    poiNFTCS :: !GYMintingPolicyId,
+    -- | Version of the partial order.
+    poiVersion :: !POCVersion,
+    -- | Original raw datum.
+    poiRawDatum :: !GYDatum
   }
   deriving stock (Generic, Show, Eq)
 
 poiContainedFeeToPlutus :: POIContainedFee -> PartialOrderContainedFee
 poiContainedFeeToPlutus POIContainedFee {..} =
   PartialOrderContainedFee
-    { pocfLovelaces = fromIntegral poifLovelaces
-    , pocfOfferedTokens = fromIntegral poifOfferedTokens
-    , pocfAskedTokens = fromIntegral poifAskedTokens
+    { pocfLovelaces = fromIntegral poifLovelaces,
+      pocfOfferedTokens = fromIntegral poifOfferedTokens,
+      pocfAskedTokens = fromIntegral poifAskedTokens
     }
 
 poiContainedFeeFromPlutus :: PartialOrderContainedFee -> POIContainedFee
 poiContainedFeeFromPlutus PartialOrderContainedFee {..} =
   POIContainedFee
-    { poifLovelaces = fromIntegral pocfLovelaces
-    , poifOfferedTokens = fromIntegral pocfOfferedTokens
-    , poifAskedTokens = fromIntegral pocfAskedTokens
+    { poifLovelaces = fromIntegral pocfLovelaces,
+      poifOfferedTokens = fromIntegral pocfOfferedTokens,
+      poifAskedTokens = fromIntegral pocfAskedTokens
     }
 
 partialOrderInfoToPartialOrderDatum :: PartialOrderInfo -> PartialOrderDatum
 partialOrderInfoToPartialOrderDatum PartialOrderInfo {..} =
   PartialOrderDatum
-    { podOwnerKey = pubKeyHashToPlutus poiOwnerKey
-    , podOwnerAddr = addressToPlutus poiOwnerAddr
-    , podOfferedAsset = assetClassToPlutus poiOfferedAsset
-    , podOfferedOriginalAmount = fromIntegral poiOfferedOriginalAmount
-    , podOfferedAmount = fromIntegral poiOfferedAmount
-    , podAskedAsset = assetClassToPlutus poiAskedAsset
-    , podPrice = PlutusTx.fromGHC $ toRational poiPrice
-    , podNFT = tokenNameToPlutus poiNFT
-    , podStart = timeToPlutus <$> poiStart
-    , podEnd = timeToPlutus <$> poiEnd
-    , podPartialFills = fromIntegral poiPartialFills
-    , podMakerLovelaceFlatFee = fromIntegral poiMakerLovelaceFlatFee
-    , podTakerLovelaceFlatFee = toInteger poiTakerLovelaceFlatFee
-    , podContainedFee = poiContainedFeeToPlutus poiContainedFee
-    , podContainedPayment = toInteger poiContainedPayment
+    { podOwnerKey = pubKeyHashToPlutus poiOwnerKey,
+      podOwnerAddr = addressToPlutus poiOwnerAddr,
+      podOfferedAsset = assetClassToPlutus poiOfferedAsset,
+      podOfferedOriginalAmount = fromIntegral poiOfferedOriginalAmount,
+      podOfferedAmount = fromIntegral poiOfferedAmount,
+      podAskedAsset = assetClassToPlutus poiAskedAsset,
+      podPrice = PlutusTx.fromGHC $ toRational poiPrice,
+      podNFT = tokenNameToPlutus poiNFT,
+      podStart = timeToPlutus <$> poiStart,
+      podEnd = timeToPlutus <$> poiEnd,
+      podPartialFills = fromIntegral poiPartialFills,
+      podMakerLovelaceFlatFee = fromIntegral poiMakerLovelaceFlatFee,
+      podTakerLovelaceFlatFee = toInteger poiTakerLovelaceFlatFee,
+      podContainedFee = poiContainedFeeToPlutus poiContainedFee,
+      podContainedPayment = toInteger poiContainedPayment
     }
 
 poiGetContainedFeeValue :: PartialOrderInfo -> GYValue
@@ -311,14 +309,14 @@ partialOrderInfoToIn
   -> GYTxIn PlutusV2
 partialOrderInfoToIn GYCompiledScripts {dexPartialOrderValidator} pocVersion pors PartialOrderInfo {..} oa =
   let SomePORef (PORef {..}) = selectPor pors pocVersion
-  in GYTxIn
-       { gyTxInTxOutRef = poiRef
-       , gyTxInWitness =
-           GYTxInWitnessScript
-             (GYInReference porValRef $ validatorToScript $ dexPartialOrderValidator pocVersion porRefNft)
-             (Just poiRawDatum)
-             $ redeemerFromPlutusData oa
-       }
+   in GYTxIn
+        { gyTxInTxOutRef = poiRef,
+          gyTxInWitness =
+            GYTxInWitnessScript
+              (GYInReference porValRef $ validatorToScript $ dexPartialOrderValidator pocVersion porRefNft)
+              (Just poiRawDatum)
+              $ redeemerFromPlutusData oa
+        }
 
 partialOrderInfoToPayment :: PartialOrderInfo -> GYValue -> GYTxOut 'PlutusV2
 partialOrderInfoToPayment oi v = mkGYTxOut (poiOwnerAddr oi) v (datumFromPlutusData $ txOutRefToPlutus $ poiRef oi)
@@ -353,7 +351,7 @@ expectedPaymentWithDeposit poi@PartialOrderInfo {..} isCompleteFill =
   let
     toSubtract = valueSingleton (GYToken poiNFTCS poiNFT) 1 <> valueSingleton poiOfferedAsset (toInteger poiOfferedAmount) <> poiGetContainedFeeValue poi
     toAdd = if isCompleteFill then partialOrderPrice poi poiOfferedAmount else mempty
-  in
+   in
     poiUTxOValue <> toAdd `valueMinus` toSubtract
 
 -------------------------------------------------------------------------------
@@ -457,7 +455,7 @@ orderByNft por orderNft = do
   ois <- partialOrdersHavingAsset por (Just orderNft)
   case Map.elems ois of
     [oi] -> pure $ Just oi
-    _    -> pure Nothing
+    _ -> pure Nothing
 
 getPartialOrderVersion :: GYApiQueryMonad m => PORefs -> (GYAddress :!: GYTxOutRef) -> m POCVersion
 getPartialOrderVersion pors outxo = do
@@ -534,32 +532,32 @@ makePartialOrderInfo policyId orderRef (utxoAddr, v, PartialOrderDatum {..}, ori
   nft <- tokenNameFromPlutus' podNFT
   askedAsset <- assetClassFromPlutus' podAskedAsset
 
-  when (valueAssetClass v (GYToken policyId nft) /= 1)
-    $ throwAppError PodNftNotAvailable
+  when (valueAssetClass v (GYToken policyId nft) /= 1) $
+    throwAppError PodNftNotAvailable
 
   return
     PartialOrderInfo
-      { poiRef = orderRef
-      , poiOwnerKey = key
-      , poiOwnerAddr = addr
-      , poiOfferedAsset = offeredAsset
-      , poiOfferedOriginalAmount = fromInteger podOfferedOriginalAmount
-      , poiOfferedAmount = fromInteger podOfferedAmount
-      , poiAskedAsset = askedAsset
-      , poiPrice = rationalFromPlutus podPrice
-      , poiNFT = nft
-      , poiStart = timeFromPlutus <$> podStart
-      , poiEnd = timeFromPlutus <$> podEnd
-      , poiPartialFills = fromInteger podPartialFills
-      , poiMakerLovelaceFlatFee = fromIntegral podMakerLovelaceFlatFee
-      , poiTakerLovelaceFlatFee = fromInteger podTakerLovelaceFlatFee
-      , poiContainedFee = poiContainedFeeFromPlutus podContainedFee
-      , poiContainedPayment = fromInteger podContainedPayment
-      , poiUTxOValue = v
-      , poiUTxOAddr = utxoAddr
-      , poiNFTCS = policyId
-      , poiVersion = pocVersion
-      , poiRawDatum = origDatum
+      { poiRef = orderRef,
+        poiOwnerKey = key,
+        poiOwnerAddr = addr,
+        poiOfferedAsset = offeredAsset,
+        poiOfferedOriginalAmount = fromInteger podOfferedOriginalAmount,
+        poiOfferedAmount = fromInteger podOfferedAmount,
+        poiAskedAsset = askedAsset,
+        poiPrice = rationalFromPlutus podPrice,
+        poiNFT = nft,
+        poiStart = timeFromPlutus <$> podStart,
+        poiEnd = timeFromPlutus <$> podEnd,
+        poiPartialFills = fromInteger podPartialFills,
+        poiMakerLovelaceFlatFee = fromIntegral podMakerLovelaceFlatFee,
+        poiTakerLovelaceFlatFee = fromInteger podTakerLovelaceFlatFee,
+        poiContainedFee = poiContainedFeeFromPlutus podContainedFee,
+        poiContainedPayment = fromInteger podContainedPayment,
+        poiUTxOValue = v,
+        poiUTxOAddr = utxoAddr,
+        poiNFTCS = policyId,
+        poiVersion = pocVersion,
+        poiRawDatum = origDatum
       }
 
 -------------------------------------------------------------------------------
@@ -684,8 +682,8 @@ placePartialOrderWithVersion' pors pocVersion addr (offerAmt, offerAC) priceAC p
     nft = GYToken (mintingPolicyId policy) nftName
     nftInput =
       GYTxIn
-        { gyTxInTxOutRef = nftRef
-        , gyTxInWitness = GYTxInWitnessKey
+        { gyTxInTxOutRef = nftRef,
+          gyTxInWitness = GYTxInWitnessKey
         }
     nftV = valueSingleton nft 1
     offerAmt' = toInteger offerAmt
@@ -701,33 +699,33 @@ placePartialOrderWithVersion' pors pocVersion addr (offerAmt, offerAC) priceAC p
         <> makerFee
     containedFee =
       PartialOrderContainedFee
-        { pocfLovelaces = makerFeeFlat
-        , pocfOfferedTokens = makerFeeOff
-        , pocfAskedTokens = 0
+        { pocfLovelaces = makerFeeFlat,
+          pocfOfferedTokens = makerFeeOff,
+          pocfAskedTokens = 0
         }
     od =
       PartialOrderDatum
-        { podOwnerKey = pubKeyHashToPlutus pkh
-        , podOwnerAddr = addressToPlutus addr
-        , podOfferedAsset = assetClassToPlutus offerAC
-        , podOfferedOriginalAmount = offerAmt'
-        , podOfferedAmount = offerAmt'
-        , podAskedAsset = assetClassToPlutus priceAC
-        , podPrice = rationalToPlutus price
-        , podNFT = tokenNameToPlutus nftName
-        , podStart = timeToPlutus <$> start
-        , podEnd = timeToPlutus <$> end
-        , podPartialFills = 0
-        , podMakerLovelaceFlatFee = makerFeeFlat
-        , podTakerLovelaceFlatFee = pocdTakerFee pocd
-        , podContainedFee = containedFee
-        , podContainedPayment = 0
+        { podOwnerKey = pubKeyHashToPlutus pkh,
+          podOwnerAddr = addressToPlutus addr,
+          podOfferedAsset = assetClassToPlutus offerAC,
+          podOfferedOriginalAmount = offerAmt',
+          podOfferedAmount = offerAmt',
+          podAskedAsset = assetClassToPlutus priceAC,
+          podPrice = rationalToPlutus price,
+          podNFT = tokenNameToPlutus nftName,
+          podStart = timeToPlutus <$> start,
+          podEnd = timeToPlutus <$> end,
+          podPartialFills = 0,
+          podMakerLovelaceFlatFee = makerFeeFlat,
+          podTakerLovelaceFlatFee = pocdTakerFee pocd,
+          podContainedFee = containedFee,
+          podContainedPayment = 0
         }
 
     o = mkGYTxOut outAddr' offerV (datumFromPlutusData od)
 
-  return
-    $ mustHaveInput nftInput
+  return $
+    mustHaveInput nftInput
       <> mustHaveOutput o
       <> mustMint (GYMintReference porMintRef $ mintingPolicyToScript policy) nftRedeemer nftName 1
       <> mustHaveRefInput cfgRef
@@ -825,21 +823,21 @@ mkSkeletonCompletelyFillPartialOrder pors oi@PartialOrderInfo {..} mRefPocd addT
     feeOutput
       | fee == mempty = mempty -- We do not require a fee output.
       | otherwise =
-          mustHaveOutput
-            $ mkGYTxOut
+          mustHaveOutput $
+            mkGYTxOut
               (pocdFeeAddr pocd)
               fee
-              ( datumFromPlutusData
-                  $ PartialOrderFeeOutput
-                    { pofdMentionedFees = PlutusTx.singleton (txOutRefToPlutus poiRef) (valueToPlutus containedFee)
-                    , pofdReservedValue = mempty
-                    , pofdSpentUTxORef = Nothing
+              ( datumFromPlutusData $
+                  PartialOrderFeeOutput
+                    { pofdMentionedFees = PlutusTx.singleton (txOutRefToPlutus poiRef) (valueToPlutus containedFee),
+                      pofdReservedValue = mempty,
+                      pofdSpentUTxORef = Nothing
                     }
               )
     expectedValueOut = expectedPaymentWithDeposit oi True
 
-  return
-    $ mustHaveInput (partialOrderInfoToIn gycs pocVersion pors oi CompleteFill)
+  return $
+    mustHaveInput (partialOrderInfoToIn gycs pocVersion pors oi CompleteFill)
       <> mustHaveRefInput cfgRef
       <> mustHaveOutput (partialOrderInfoToPayment oi expectedValueOut)
       <> feeOutput
@@ -872,10 +870,10 @@ mkSkeletonPartiallyFillPartialOrder pors oi@PartialOrderInfo {..} amt mRefPocd a
     od =
       partialOrderInfoToPartialOrderDatum
         oi
-          { poiOfferedAmount = poiOfferedAmount - amt
-          , poiPartialFills = poiPartialFills + 1
-          , poiContainedFee = poiContainedFee <> mempty {poifLovelaces = fromIntegral poiTakerLovelaceFlatFee, poifAskedTokens = addTakerFee}
-          , poiContainedPayment = poiContainedPayment + fromIntegral (valueAssetClass price' poiAskedAsset)
+          { poiOfferedAmount = poiOfferedAmount - amt,
+            poiPartialFills = poiPartialFills + 1,
+            poiContainedFee = poiContainedFee <> mempty {poifLovelaces = fromIntegral poiTakerLovelaceFlatFee, poifAskedTokens = addTakerFee},
+            poiContainedPayment = poiContainedPayment + fromIntegral (valueAssetClass price' poiAskedAsset)
           }
 
     expectedValueOut = poiUTxOValue <> price' <> valueFromLovelace (fromIntegral poiTakerLovelaceFlatFee) <> valueSingleton poiAskedAsset (fromIntegral addTakerFee) `valueMinus` valueSingleton poiOfferedAsset (toInteger amt)
@@ -884,8 +882,8 @@ mkSkeletonPartiallyFillPartialOrder pors oi@PartialOrderInfo {..} amt mRefPocd a
   cs <- validFillRangeConstraints poiStart poiEnd
   gycs <- ask
 
-  return
-    $ mustHaveInput (partialOrderInfoToIn gycs pocVersion pors oi $ PartialFill $ toInteger amt)
+  return $
+    mustHaveInput (partialOrderInfoToIn gycs pocVersion pors oi $ PartialFill $ toInteger amt)
       <> mustHaveOutput o
       <> cs
       <> mustHaveRefInput cfgRef
@@ -916,7 +914,7 @@ addCfgRefInputs versionsSet cfgRefs =
   let
     RefPocd (cfgRefV1 :!: _) = selectV1RefPocd cfgRefs
     RefPocd (cfgRefV1_1 :!: _) = selectV1_1RefPocd cfgRefs
-  in
+   in
     ( if Set.member POCVersion1 versionsSet
         then mustHaveRefInput cfgRefV1
         else mempty
@@ -935,7 +933,7 @@ preferentiallySelectLatestPocd versionsSet cfgRefs =
   let
     overallVersion = preferentiallySelectLatestVersion versionsSet
     SomeRefPocd (RefPocd (_ :!: pocd)) = selectRefPocd cfgRefs overallVersion
-  in
+   in
     pocd
 
 -- | Cancel multiple partial orders.
@@ -961,7 +959,7 @@ cancelMultiplePartialOrders' pors ois = do
                   <> mustHaveOutput (partialOrderInfoToPayment poi (expectedPaymentWithDeposit poi False))
                   <> mustBeSignedBy poiOwnerKey
                   <> mustMint (GYMintReference porMintRef (withSomePORef por (partialOrderNftPolicy' gycs) & mintingPolicyToScript)) nothingRedeemer poiNFT (-1)
-            in
+             in
               if poiPartialFills == 0 || poiContainedFee == mempty
                 then (mapAcc, feeAcc, skelAcc <> skelAdd)
                 else
@@ -970,10 +968,10 @@ cancelMultiplePartialOrders' pors ois = do
                       let
                         POIContainedFee {..} = poiContainedFee
                         feeToRefund :: Natural = floor $ (poiOfferedAmount % poiOfferedOriginalAmount) * (poifOfferedTokens % 1)
-                      in
+                       in
                         POIContainedFee {poifLovelaces = poifLovelaces, poifOfferedTokens = poifOfferedTokens - feeToRefund, poifAskedTokens = poifAskedTokens}
                     reqContainedFeeValue = poiContainedFeeToValue reqContainedFee poiOfferedAsset poiAskedAsset
-                  in
+                   in
                     (PlutusTx.unionWith (<>) mapAcc (PlutusTx.singleton (txOutRefToPlutus poiRef) (valueToPlutus reqContainedFeeValue)), feeAcc <> reqContainedFeeValue, skelAcc <> skelAdd)
         )
         (PlutusTx.empty, mempty, mempty)
@@ -982,8 +980,8 @@ cancelMultiplePartialOrders' pors ois = do
       | totalRequiredFees == mempty = mempty
       | otherwise =
           mustHaveOutput $ mkGYTxOut (pocdFeeAddr pocd) totalRequiredFees $ datumFromPlutusData $ PartialOrderFeeOutput feeOutputMap mempty Nothing
-  pure
-    $ feeOutput
+  pure $
+    feeOutput
       <> accumulatedSkeleton
       <> addCfgRefInputs versionsSet cfgRefs
       <> mustHaveTxMetadata stampCancel
@@ -1038,11 +1036,11 @@ fillMultiplePartialOrders' pors orders mRefPocd addTakerFee = do
           foldl'
             ( \(!mapAcc, !feeAcc, !prevMaxTakerFee) (PartialOrderInfo {..}, amtToFill) ->
                 let curMaxTakerFee = max prevMaxTakerFee poiTakerLovelaceFlatFee
-                in if amtToFill == poiOfferedAmount
-                     then
-                       let orderContainedFee = poiContainedFeeToValue poiContainedFee poiOfferedAsset poiAskedAsset
-                       in (PlutusTx.unionWith (<>) mapAcc (PlutusTx.singleton (txOutRefToPlutus poiRef) (valueToPlutus orderContainedFee)), feeAcc <> orderContainedFee, curMaxTakerFee)
-                     else (mapAcc, feeAcc, curMaxTakerFee)
+                 in if amtToFill == poiOfferedAmount
+                      then
+                        let orderContainedFee = poiContainedFeeToValue poiContainedFee poiOfferedAsset poiAskedAsset
+                         in (PlutusTx.unionWith (<>) mapAcc (PlutusTx.singleton (txOutRefToPlutus poiRef) (valueToPlutus orderContainedFee)), feeAcc <> orderContainedFee, curMaxTakerFee)
+                      else (mapAcc, feeAcc, curMaxTakerFee)
             )
             (PlutusTx.empty, mempty, 0)
             orders
@@ -1061,24 +1059,24 @@ fillMultiplePartialOrders' pors orders mRefPocd addTakerFee = do
                 if amt == poiOfferedAmount
                   then
                     let expectedValueOut = expectedPaymentWithDeposit poi True
-                    in mustHaveInput (partialOrderInfoToIn gycs poiVersion pors poi CompleteFill)
-                         <> mustHaveOutput (partialOrderInfoToPayment poi expectedValueOut)
-                         <> mustMint (GYMintReference porMintRef (withSomePORef por (partialOrderNftPolicy' gycs) & mintingPolicyToScript)) nothingRedeemer poiNFT (-1)
-                         <> cs
+                     in mustHaveInput (partialOrderInfoToIn gycs poiVersion pors poi CompleteFill)
+                          <> mustHaveOutput (partialOrderInfoToPayment poi expectedValueOut)
+                          <> mustMint (GYMintReference porMintRef (withSomePORef por (partialOrderNftPolicy' gycs) & mintingPolicyToScript)) nothingRedeemer poiNFT (-1)
+                          <> cs
                   else
                     let
                       price' = partialOrderPrice poi amt
                       od =
                         partialOrderInfoToPartialOrderDatum
                           poi
-                            { poiOfferedAmount = poiOfferedAmount - amt
-                            , poiPartialFills = poiPartialFills + 1
-                            , poiContainedPayment = poiContainedPayment + fromIntegral (valueAssetClass price' poiAskedAsset)
+                            { poiOfferedAmount = poiOfferedAmount - amt,
+                              poiPartialFills = poiPartialFills + 1,
+                              poiContainedPayment = poiContainedPayment + fromIntegral (valueAssetClass price' poiAskedAsset)
                             }
 
                       expectedValueOut = poiUTxOValue <> price' `valueMinus` valueSingleton poiOfferedAsset (toInteger amt)
                       o = mkGYTxOut poiUTxOAddr expectedValueOut (datumFromPlutusData od)
-                    in
+                     in
                       mustHaveInput (partialOrderInfoToIn gycs poiVersion pors poi $ PartialFill $ toInteger amt)
                         <> mustHaveOutput o
                         <> cs
@@ -1102,10 +1100,10 @@ fillMultiplePartialOrders' pors orders mRefPocd addTakerFee = do
                 od =
                   partialOrderInfoToPartialOrderDatum
                     poi
-                      { poiOfferedAmount = poiOfferedAmount - amt
-                      , poiPartialFills = poiPartialFills + 1
-                      , poiContainedFee = poiContainedFee <> tf
-                      , poiContainedPayment = poiContainedPayment + fromIntegral (valueAssetClass price' poiAskedAsset)
+                      { poiOfferedAmount = poiOfferedAmount - amt,
+                        poiPartialFills = poiPartialFills + 1,
+                        poiContainedFee = poiContainedFee <> tf,
+                        poiContainedPayment = poiContainedPayment + fromIntegral (valueAssetClass price' poiAskedAsset)
                       }
 
                 expectedValueOut = poiUTxOValue <> price' <> poiContainedFeeToValue tf poiOfferedAsset poiAskedAsset `valueMinus` valueSingleton poiOfferedAsset (toInteger amt)
@@ -1113,8 +1111,8 @@ fillMultiplePartialOrders' pors orders mRefPocd addTakerFee = do
 
               cs <- validFillRangeConstraints poiStart poiEnd
 
-              pure
-                $! prevSkel
+              pure $!
+                prevSkel
                   <> mustHaveInput (partialOrderInfoToIn gycs poiVersion pors poi $ PartialFill $ toInteger amt)
                   <> mustHaveOutput o
                   <> cs
@@ -1127,10 +1125,10 @@ fillMultiplePartialOrders' pors orders mRefPocd addTakerFee = do
   if (Set.size versionsSet > 1) || isJust (find (\(PartialOrderInfo {..}, amt) -> amt == poiOfferedAmount) orders)
     then buildWithFeeOutput
     else buildWithoutFeeOutput
-  where
-    commonCheck amt poiOfferedAmount = do
-      when (amt == 0) . throwAppError $ PodNonPositiveAmount $ toInteger amt
-      when (amt > poiOfferedAmount) . throwAppError $ PodRequestedAmountGreaterThanOfferedAmount amt poiOfferedAmount
+ where
+  commonCheck amt poiOfferedAmount = do
+    when (amt == 0) . throwAppError $ PodNonPositiveAmount $ toInteger amt
+    when (amt > poiOfferedAmount) . throwAppError $ PodRequestedAmountGreaterThanOfferedAmount amt poiOfferedAmount
 
 applyToBoth :: Bifunctor p => (c -> d) -> p c c -> p d d
 applyToBoth f = bimap f f

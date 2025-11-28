@@ -9,37 +9,36 @@ import Control.Monad.Trans.Except
 import Data.Text (Text)
 import Data.Text qualified as Txt
 import GeniusYield.OnChain.Core.Common.Scripts
+import GeniusYield.OnChain.DEX.NFT.Compiled (optimizedNftPolicy)
+import GeniusYield.OnChain.DEX.PartialOrder.Compiled (
+  optimizedPartialOrderValidator,
+  optimizedPartialOrderValidatorWithTracing,
+ )
+import GeniusYield.OnChain.DEX.PartialOrderConfig.Compiled (
+  optimizedPartialOrderConfigValidator,
+  optimizedPartialOrderConfigValidatorWithTracing,
+ )
+import GeniusYield.OnChain.DEX.PartialOrderNFT.Compiled (
+  optimizedPartialOrderNftPolicy,
+  optimizedPartialOrderNftPolicyWithTracing,
+ )
+import GeniusYield.OnChain.DEX.PartialOrderNFTV1_1.Compiled (
+  optimizedPartialOrderNftV1_1Policy,
+  optimizedPartialOrderNftV1_1PolicyWithTracing,
+ )
+import GeniusYield.OnChain.DEX.TwoWayOrderConfig.Compiled (
+  optimizedTwoWayOrderConfigValidator,
+  optimizedTwoWayOrderConfigValidatorWithTracing,
+ )
+import GeniusYield.OnChain.Staking.Stake.Compiled (optimizedStakeValidator)
+import GeniusYield.OnChain.TokenSale.Order.Compiled qualified as TS
+import GeniusYield.OnChain.TokenSale.SalePhaseToken.Compiled (optimizedSalePhaseTokenPolicy)
 import Ply
 import Ply.Core.Internal.Reify (ReifyRole, ReifyTypenames)
 import Ply.Core.Serialize
 import Ply.Core.TypedReader
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>))
-
-import GeniusYield.OnChain.DEX.NFT.Compiled (optimizedNftPolicy)
-import GeniusYield.OnChain.DEX.PartialOrder.Compiled
-  ( optimizedPartialOrderValidator
-  , optimizedPartialOrderValidatorWithTracing
-  )
-import GeniusYield.OnChain.DEX.PartialOrderConfig.Compiled
-  ( optimizedPartialOrderConfigValidator
-  , optimizedPartialOrderConfigValidatorWithTracing
-  )
-import GeniusYield.OnChain.DEX.PartialOrderNFT.Compiled
-  ( optimizedPartialOrderNftPolicy
-  , optimizedPartialOrderNftPolicyWithTracing
-  )
-import GeniusYield.OnChain.DEX.PartialOrderNFTV1_1.Compiled
-  ( optimizedPartialOrderNftV1_1Policy
-  , optimizedPartialOrderNftV1_1PolicyWithTracing
-  )
-import GeniusYield.OnChain.DEX.TwoWayOrderConfig.Compiled
-  ( optimizedTwoWayOrderConfigValidator
-  , optimizedTwoWayOrderConfigValidatorWithTracing
-  )
-import GeniusYield.OnChain.Staking.Stake.Compiled (optimizedStakeValidator)
-import GeniusYield.OnChain.TokenSale.Order.Compiled qualified as TS
-import GeniusYield.OnChain.TokenSale.SalePhaseToken.Compiled (optimizedSalePhaseTokenPolicy)
 
 main :: IO ()
 main = do

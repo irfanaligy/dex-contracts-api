@@ -8,59 +8,57 @@ License     : Apache 2.0
 Maintainer  : support@geniusyield.com
 Stability   : develop
 -}
-module GeniusYield.Scripts.DEX.PartialOrderConfig
-  ( -- * Reexport version and related utilities
-    POCVersion (..)
-  , SingPOCVersion (..)
-  , toSingPOCVersion
-  , fromSingPOCVersion
-  , SingPOCVersionI (..)
-  , SomeSingPOCVersion (..)
-  , withSomeSingPOCVersion
+module GeniusYield.Scripts.DEX.PartialOrderConfig (
+  -- * Reexport version and related utilities
+  POCVersion (..),
+  SingPOCVersion (..),
+  toSingPOCVersion,
+  fromSingPOCVersion,
+  SingPOCVersionI (..),
+  SomeSingPOCVersion (..),
+  withSomeSingPOCVersion,
 
-    -- * Validator
-  , partialOrderConfigValidator
-  , partialOrderConfigValidatorHash
-  , partialOrderConfigPlutusAddr
+  -- * Validator
+  partialOrderConfigValidator,
+  partialOrderConfigValidatorHash,
+  partialOrderConfigPlutusAddr,
 
-    -- * Datum
-  , PartialOrderConfigDatumF (..)
-  , PartialOrderConfigDatum
-  )
-where
+  -- * Datum
+  PartialOrderConfigDatumF (..),
+  PartialOrderConfigDatum,
+) where
 
 import GHC.Generics (Generic)
-import GeniusYield.Types
-import PlutusLedgerApi.V1 qualified as Plutus
-import PlutusTx
-  ( BuiltinData
-  , FromData (fromBuiltinData)
-  , ToData (toBuiltinData)
-  )
-import Ply ((#))
-
 import GeniusYield.Scripts.DEX.PartialOrderConfig.OnChain qualified as OnChain
 -- import GeniusYield.OnChain.DEX.PartialOrderConfig.Compiled qualified as OnChain
 import GeniusYield.Scripts.DEX.Version
 import GeniusYield.Scripts.Internal
+import GeniusYield.Types
+import PlutusLedgerApi.V1 qualified as Plutus
+import PlutusTx (
+  BuiltinData,
+  FromData (fromBuiltinData),
+  ToData (toBuiltinData),
+ )
+import Ply ((#))
 
 data PartialOrderConfigDatumF addr = PartialOrderConfigDatum
-  { pocdSignatories :: ![GYPubKeyHash]
-  -- ^ Public key hashes of the potential signatories.
-  , pocdReqSignatories :: !Integer
-  -- ^ Number of required signatures.
-  , pocdNftSymbol :: !GYMintingPolicyId
-  -- ^ Minting Policy Id of the partial order Nft.
-  , pocdFeeAddr :: !addr
-  -- ^ Address to which fees are paid.
-  , pocdMakerFeeFlat :: !Integer
-  -- ^ Flat fee (in lovelace) paid by the maker.
-  , pocdMakerFeeRatio :: !GYRational
-  -- ^ Proportional fee (in the offered token) paid by the maker.
-  , pocdTakerFee :: !Integer
-  -- ^ Flat fee (in lovelace) paid by the taker.
-  , pocdMinDeposit :: !Integer
-  -- ^ Minimum required deposit (in lovelace).
+  { -- | Public key hashes of the potential signatories.
+    pocdSignatories :: ![GYPubKeyHash],
+    -- | Number of required signatures.
+    pocdReqSignatories :: !Integer,
+    -- | Minting Policy Id of the partial order Nft.
+    pocdNftSymbol :: !GYMintingPolicyId,
+    -- | Address to which fees are paid.
+    pocdFeeAddr :: !addr,
+    -- | Flat fee (in lovelace) paid by the maker.
+    pocdMakerFeeFlat :: !Integer,
+    -- | Proportional fee (in the offered token) paid by the maker.
+    pocdMakerFeeRatio :: !GYRational,
+    -- | Flat fee (in lovelace) paid by the taker.
+    pocdTakerFee :: !Integer,
+    -- | Minimum required deposit (in lovelace).
+    pocdMinDeposit :: !Integer
   }
   deriving (Functor, Generic, Show)
 
@@ -71,14 +69,14 @@ instance ToData (PartialOrderConfigDatumF Plutus.Address) where
   toBuiltinData PartialOrderConfigDatum {..} =
     toBuiltinData
       OnChain.PartialOrderConfigDatum
-        { OnChain.pocdSignatories = pubKeyHashToPlutus <$> pocdSignatories
-        , OnChain.pocdReqSignatories = pocdReqSignatories
-        , OnChain.pocdNftSymbol = mintingPolicyIdToCurrencySymbol pocdNftSymbol
-        , OnChain.pocdFeeAddr = pocdFeeAddr
-        , OnChain.pocdMakerFeeFlat = pocdMakerFeeFlat
-        , OnChain.pocdMakerFeeRatio = rationalToPlutus pocdMakerFeeRatio
-        , OnChain.pocdTakerFee = pocdTakerFee
-        , OnChain.pocdMinDeposit = pocdMinDeposit
+        { OnChain.pocdSignatories = pubKeyHashToPlutus <$> pocdSignatories,
+          OnChain.pocdReqSignatories = pocdReqSignatories,
+          OnChain.pocdNftSymbol = mintingPolicyIdToCurrencySymbol pocdNftSymbol,
+          OnChain.pocdFeeAddr = pocdFeeAddr,
+          OnChain.pocdMakerFeeFlat = pocdMakerFeeFlat,
+          OnChain.pocdMakerFeeRatio = rationalToPlutus pocdMakerFeeRatio,
+          OnChain.pocdTakerFee = pocdTakerFee,
+          OnChain.pocdMinDeposit = pocdMinDeposit
         }
 
 instance ToData PartialOrderConfigDatum where
@@ -93,18 +91,18 @@ instance FromData (PartialOrderConfigDatumF Plutus.Address) where
     nftSymbol <- fromEither $ mintingPolicyIdFromCurrencySymbol pocdNftSymbol
     pure
       PartialOrderConfigDatum
-        { pocdSignatories = signatories
-        , pocdReqSignatories = pocdReqSignatories
-        , pocdNftSymbol = nftSymbol
-        , pocdFeeAddr = pocdFeeAddr
-        , pocdMakerFeeFlat = pocdMakerFeeFlat
-        , pocdMakerFeeRatio = rationalFromPlutus pocdMakerFeeRatio
-        , pocdTakerFee = pocdTakerFee
-        , pocdMinDeposit = pocdMinDeposit
+        { pocdSignatories = signatories,
+          pocdReqSignatories = pocdReqSignatories,
+          pocdNftSymbol = nftSymbol,
+          pocdFeeAddr = pocdFeeAddr,
+          pocdMakerFeeFlat = pocdMakerFeeFlat,
+          pocdMakerFeeRatio = rationalFromPlutus pocdMakerFeeRatio,
+          pocdTakerFee = pocdTakerFee,
+          pocdMinDeposit = pocdMinDeposit
         }
-    where
-      fromEither :: Either e a -> Maybe a
-      fromEither = either (const Nothing) Just
+   where
+    fromEither :: Either e a -> Maybe a
+    fromEither = either (const Nothing) Just
 
 partialOrderConfigValidatorHash
   :: GYCompiledScriptsRaw
@@ -120,7 +118,7 @@ partialOrderConfigValidator GYCompiledScriptsRaw {gycsDEXPartialOrderConfig, gyc
       if
         | ac == "fae686ea8f21d567841d703dea4d4221c2af071a6f2b433ff07c0af2.8309f9861928a55d37e84f6594b878941edce5e351f7904c2c63b559bde45c5c" -> gycsDEXPartialOrderConfigV1AppliedPreprod
         | ac == "fae686ea8f21d567841d703dea4d4221c2af071a6f2b433ff07c0af2.4aff78908ef2dce98bfe435fb3fd2529747b1c4564dff5adebedf4e46d0fc63d" -> gycsDEXPartialOrderConfigV1AppliedMainnet
-        -- | otherwise -> validatorFromPlutus . OnChain.originalPartialOrderConfigValidator . assetClassToPlutus $ ac
+        -- \| otherwise -> validatorFromPlutus . OnChain.originalPartialOrderConfigValidator . assetClassToPlutus $ ac
         | otherwise -> error "partialOrderConfigValidator not found"
     POCVersion1_1 -> validatorFromPly $ gycsDEXPartialOrderConfig # assetClassToPlutus ac
 
