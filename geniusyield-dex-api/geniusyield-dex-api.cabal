@@ -141,7 +141,7 @@ library
     -- GeniusYield.Api.Vesting.Types
     GeniusYield.Config
     GeniusYield.Config.DEX
-    GeniusYield.Config.ISPO
+    -- GeniusYield.Config.ISPO
     -- GeniusYield.Config.Rewards
     -- GeniusYield.Config.TokenSale
     GeniusYield.Config.Utils
