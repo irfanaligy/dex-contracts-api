@@ -28,7 +28,7 @@ import GHC.TypeLits (Symbol)
 import GeniusYield.Api.DEX.PartialOrder (PartialOrderInfo (..), partialOrders)
 import GeniusYield.Api.DEX.PartialOrderConfig (RefPocd (..), SomeRefPocd (SomeRefPocd), fetchPartialOrderConfig)
 import GeniusYield.OrderBot.Domain.Markets
-import GeniusYield.Scripts (PartialOrderConfigInfoF (..))
+import GeniusYield.Scripts.DEX.PartialOrderConfig (PartialOrderConfigDatumF (..))
 import GeniusYield.Scripts.DEX.Version (POCVersion (POCVersion1_1))
 import GeniusYield.Server.Assets
 import GeniusYield.Server.Auth (APIKeyAuthProtect, V0)
@@ -307,10 +307,10 @@ handleTradingFeesApi ctx@Ctx {..} = do
   SomeRefPocd (RefPocd (_ :!: pocd)) <- runQuery ctx $ fetchPartialOrderConfig POCVersion1_1 $ dexPORefs ctxDexInfo
   pure
     TradingFees
-      { tfFlatMakerFee = fromIntegral $ pociMakerFeeFlat pocd,
-        tfFlatTakerFee = fromIntegral $ pociTakerFee pocd,
-        tfPercentageMakerFee = 100 * pociMakerFeeRatio pocd,
-        tfPercentageTakerFee = 100 * pociMakerFeeRatio pocd
+      { tfFlatMakerFee = fromIntegral $ pocdMakerFeeFlat pocd,
+        tfFlatTakerFee = fromIntegral $ pocdTakerFee pocd,
+        tfPercentageMakerFee = 100 * pocdMakerFeeRatio pocd,
+        tfPercentageTakerFee = 100 * pocdMakerFeeRatio pocd
       }
 
 handleOrderBookApi :: Ctx -> OrderAssetPair -> Maybe GYAddressBech32 -> IO OrderBookInfo

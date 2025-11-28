@@ -27,6 +27,9 @@ module GeniusYield.Api.DEX.PartialOrder
 
     -- * Queries
   , partialOrders
+  , partialOrdersHavingAsset
+  , partialOrdersWithTransformerPredicate
+  , orderByNft
   , getPartialOrderVersion
   , getPartialOrderVersion'
   , getPartialOrderInfo
@@ -409,20 +412,52 @@ partialOrders
   :: GYApiQueryMonad m
   => PORefs
   -> m (Map.Map GYTxOutRef PartialOrderInfo)
-partialOrders pors = do
+partialOrders = flip partialOrdersHavingAsset Nothing
+
+partialOrdersHavingAsset
+  :: GYApiQueryMonad m
+  => PORefs
+  -> Maybe GYAssetClass
+  -> m (Map.Map GYTxOutRef PartialOrderInfo)
+partialOrdersHavingAsset pors hasAsset = do
   addrTuple <- partialOrderAddrTuple pors
   let pV1 :!: pV1_1 = applyToBoth (fromJust . addressToPaymentCredential) addrTuple
-  utxosWithDatumsV1 <- utxosAtPaymentCredentialWithDatums pV1 Nothing
+  utxosWithDatumsV1 <- utxosAtPaymentCredentialWithDatums pV1 hasAsset
   -- TODO: Add support in Atlas to query multiple payment credentials in one go.
-  utxosWithDatumsV1_1 <- utxosAtPaymentCredentialWithDatums pV1_1 Nothing
+  utxosWithDatumsV1_1 <- utxosAtPaymentCredentialWithDatums pV1_1 hasAsset
   policyIdV1 <- partialOrderNftPolicyId (porV1 pors)
   policyIdV1_1 <- partialOrderNftPolicyId (porV1_1 pors)
-  let
-    datumsV1 = utxosDatumsPureWithOriginalDatum utxosWithDatumsV1
-    datumsV1_1 = utxosDatumsPureWithOriginalDatum utxosWithDatumsV1_1
-  m1 <- iwither (\oref vod -> makePartialOrderInfo' policyIdV1 oref vod POCVersion1) datumsV1
-  m1_1 <- iwither (\oref vod -> makePartialOrderInfo' policyIdV1_1 oref vod POCVersion1_1) datumsV1_1
+  let datumsV1 = utxosDatumsPureWithOriginalDatum utxosWithDatumsV1
+      datumsV1_1 = utxosDatumsPureWithOriginalDatum utxosWithDatumsV1_1
+  m1 <-
+    iwither
+      (\oref vod -> makePartialOrderInfo' policyIdV1 oref vod POCVersion1)
+      datumsV1
+  m1_1 <-
+    iwither
+      (\oref vod -> makePartialOrderInfo' policyIdV1_1 oref vod POCVersion1_1)
+      datumsV1_1
   pure $! m1 <> m1_1
+
+partialOrdersWithTransformerPredicate
+  :: GYApiQueryMonad m
+  => PORefs
+  -> (PartialOrderInfo -> Maybe b)
+  -> m [b]
+partialOrdersWithTransformerPredicate pors transformerPredicate = do
+  ois <- Map.elems <$> partialOrders pors
+  pure $ mapMaybe transformerPredicate ois
+
+orderByNft
+  :: GYApiQueryMonad m
+  => PORefs
+  -> GYAssetClass
+  -> m (Maybe PartialOrderInfo)
+orderByNft por orderNft = do
+  ois <- partialOrdersHavingAsset por (Just orderNft)
+  case Map.elems ois of
+    [oi] -> pure $ Just oi
+    _    -> pure Nothing
 
 getPartialOrderVersion :: GYApiQueryMonad m => PORefs -> (GYAddress :!: GYTxOutRef) -> m POCVersion
 getPartialOrderVersion pors outxo = do

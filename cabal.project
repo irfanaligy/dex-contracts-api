@@ -13,7 +13,7 @@ packages:
   geniusyield-dex-api
   geniusyield-dex-api/geniusyield-onchain/geniusyield-core-common
   geniusyield-orderbot-lib
-  -- geniusyield-server-lib
+  geniusyield-server-lib
 
 -- repeating the index-state for hackage to work around hackage.nix parsing limitation
 index-state: 2024-10-10T00:52:24Z

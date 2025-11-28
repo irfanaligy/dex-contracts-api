@@ -4,7 +4,6 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE NoFieldSelectors #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module GeniusYield.Api.DEX.TwoWayOrder
@@ -22,6 +21,7 @@ module GeniusYield.Api.DEX.TwoWayOrder
   , TWPlaceSpec (..)
   , twoWayOrderAddr
   , twoWayOrders
+  , twoWayOrdersWithTransformerPredicate
   , cancelTwoWayOrders
   , TWFillDirection (..)
   , TWFillSpec (..)
@@ -33,8 +33,10 @@ module GeniusYield.Api.DEX.TwoWayOrder
 
   , OrderAssets (..)
   , OrderPrices (..)
+  , PriceVal (..)
   , extractOrderAssets
   , extractOrderPrices
+  , RefTWOCD
   -- ^ for use in smart-order-router
   )
 where
@@ -50,7 +52,7 @@ import Data.Foldable (for_)
 import Data.Function ((&))
 import Data.List.NonEmpty (NonEmpty)
 import Data.List.NonEmpty qualified as NE
-import Data.Maybe (isJust, fromJust)
+import Data.Maybe (isJust, fromJust, mapMaybe)
 import Data.Map.Strict (type Map)
 import Data.Map.Strict qualified as Map
 import Data.Ratio (denominator, numerator, (%))
@@ -449,6 +451,15 @@ twoWayOrders twor = do
     mkTWOrderInfo policyId orderRef tuple =
       pure empty & const & catchError do
         Just <$> makeTwoWayOrderInfo policyId orderRef tuple
+
+twoWayOrdersWithTransformerPredicate
+  :: GYApiQueryMonad m
+  => TWORef
+  -> (TwoWayOrderInfo -> Maybe b)
+  -> m [b]
+twoWayOrdersWithTransformerPredicate twors tp = do
+  ois <- Map.elems <$> twoWayOrders twors
+  pure $ mapMaybe tp ois
 
 makeTwoWayOrderInfo
   :: forall m

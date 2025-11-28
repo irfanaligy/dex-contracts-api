@@ -1,4 +1,4 @@
-module GeniusYield.Server.Dex.HistoricalPrices.TapTools.Client (
+module GeniusYield.Server.DEX.HistoricalPrices.TapTools.Client (
   TapToolsUnit (..),
   TapToolsInterval (..),
   TapToolsOHLCV (..),

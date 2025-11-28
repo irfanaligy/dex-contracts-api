@@ -31,6 +31,7 @@ module GeniusYield.Api.Oracle
 
     -- * Testing helpers
   , newMockProvider
+  , SignatureOffchain (..)
   )
 where
 
@@ -63,7 +64,7 @@ import GeniusYield.Crypto (SignatureOffchain (..))
 
 -- | Minimal price wrapper for clarity.
 newtype Price = Price {getPrice :: Rational}
-  deriving stock (Eq, Generic, Show)
+  deriving stock (Eq, Generic, Show, Ord)
 
 -- | Signals about the state of aggregation.
 data PriceIndicator

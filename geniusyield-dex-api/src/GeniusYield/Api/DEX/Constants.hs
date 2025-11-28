@@ -4,19 +4,23 @@ module GeniusYield.Api.DEX.Constants (
   poConfigAddrMainnet,
   poConfigAddrPreprod,
   DEXInfo (..),
+  twoRefsPreprod,
+  twoRefsMainnet,
   dexInfoDefaultMainnet,
   dexInfoDefaultPreprod,
 ) where
 
+-- import GeniusYield.Api.DEX.TwoWayOrderConfig (TWORef (..), RefTWOCD (..), fetchTwoWayOrderConfig)
+import GeniusYield.Api.DEX.TwoWayOrderConfig (TWORef (..))
 import GeniusYield.Api.DEX.PartialOrderConfig (PORef (..), PORefs (..))
--- import GeniusYield.OnChain.Common.Scripts.DEX.Data
--- import GeniusYield.Scripts (HasPartialOrderConfigAddr (..), HasPartialOrderNftScript (..), HasPartialOrderScript (..))
+import GeniusYield.Scripts (GYCompiledScripts, readCompiledScripts)
 import GeniusYield.Scripts.DEX.Version (POCVersion (POCVersion1, POCVersion1_1))
 import GeniusYield.Types (GYAddress, unsafeAddressFromText)
-import PlutusLedgerApi.V1 (Address)
-import PlutusLedgerApi.V1.Scripts (ScriptHash)
-import PlutusLedgerApi.V1.Value (AssetClass)
-import Ply (ScriptRole (..), TypedScript)
+-- import Control.Monad.Reader (runReaderT)
+-- import PlutusLedgerApi.V1 (Address)
+-- import PlutusLedgerApi.V1.Scripts (ScriptHash)
+-- import PlutusLedgerApi.V1.Value (AssetClass)
+-- import Ply (ScriptRole (..), TypedScript)
 
 poRefsMainnet :: PORefs
 poRefsMainnet =
@@ -52,6 +56,28 @@ poRefsPreprod =
           }
     }
 
+twoRefsMainnet :: TWORef
+twoRefsMainnet = 
+  TWORef
+  {
+    tworRefNft    = ""
+  , tworMintRef   = ""
+  , tworSpendRef  = ""
+  , tworFillRef   = ""
+  , tworCancelRef = ""
+  }
+
+twoRefsPreprod :: TWORef
+twoRefsPreprod = 
+  TWORef
+  {
+    tworRefNft    = "fae686ea8f21d567841d703dea4d4221c2af071a6f2b433ff07c0af2.dbcf78371df705da17b8c70e93cb3603ba6b9009ec3389fe319ec0bab1f9406d"
+  , tworMintRef   = "e6f7734e1c65da63b4e1185ed57c80c74291bb072c8a1337bd7e5a6a8f0dbc69#1"
+  , tworSpendRef  = "9432d77b5636390d2af241c92bcaec2af910bff034eea73918953a34b50d33e7#0"
+  , tworFillRef   = "62ba0d7454c8cfa8b49ec9bf079eb561a5728ea59e611d91877a403b0d5153fd#0"
+  , tworCancelRef = "6f0113dfc55a745046fa0701debb1472e01ea6001ad20b94934abea359baaa33#0"
+  }
+
 poConfigAddrMainnet :: POCVersion -> GYAddress
 poConfigAddrMainnet =
   let v1Addr = unsafeAddressFromText "addr1w9zr09hgj7z6vz3d7wnxw0u4x30arsp5k8avlcm84utptls8uqd0z"
@@ -70,26 +96,32 @@ poConfigAddrPreprod =
 
 data DEXInfo = DEXInfo
   {
-    dexPartialOrderValidator :: !(TypedScript 'ValidatorRole '[Address, AssetClass]),
-    dexNftPolicy :: !(POCVersion -> TypedScript 'MintingPolicyRole '[ScriptHash, Address, AssetClass]),
-    dexPartialOrderConfigAddr :: !(POCVersion -> GYAddress),
-    dexPORefs :: !PORefs
+    dexPORefs  :: !PORefs
+  , dexTWORefs :: !TWORef
+  , dexScripts :: !GYCompiledScripts
+  -- , dexRefCfg  :: !RefTWOCD
   }
 
-dexInfoDefaultMainnet :: DEXInfo
-dexInfoDefaultMainnet =
-  DEXInfo
-    { dexPartialOrderValidator = undefined,
-      dexNftPolicy = undefined,
-      dexPartialOrderConfigAddr = undefined,
-      dexPORefs = poRefsMainnet
+dexInfoDefaultMainnet :: IO DEXInfo
+dexInfoDefaultMainnet = do
+  gycs   <- readCompiledScripts
+  -- refCfg <- runReaderT (fetchTwoWayOrderConfig (tworRefNft twoRefsMainnet)) gycs
+  return $ DEXInfo
+    { 
+      dexPORefs  = poRefsMainnet
+    , dexTWORefs = twoRefsMainnet
+    , dexScripts = gycs
+    -- , dexRefCfg  = refCfg
     }
 
-dexInfoDefaultPreprod :: DEXInfo
-dexInfoDefaultPreprod =
-  DEXInfo
-    { dexPartialOrderValidator = undefined,
-      dexNftPolicy = undefined,
-      dexPartialOrderConfigAddr = undefined,
-      dexPORefs = poRefsPreprod
+dexInfoDefaultPreprod :: IO DEXInfo
+dexInfoDefaultPreprod = do
+  gycs   <- readCompiledScripts
+  -- refCfg <- runReaderT (fetchTwoWayOrderConfig (tworRefNft twoRefsPreprod)) gycs
+  return $ DEXInfo
+    { 
+      dexPORefs  = poRefsPreprod
+    , dexTWORefs = twoRefsPreprod
+    , dexScripts = gycs
+    -- , dexRefCfg  = refCfg
     }

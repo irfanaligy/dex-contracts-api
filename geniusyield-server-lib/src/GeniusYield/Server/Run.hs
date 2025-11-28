@@ -22,7 +22,7 @@ import GeniusYield.Server.Ctx
 
 -- import Servant.PY (requests, writePythonForAPI)
 
-import GeniusYield.Server.Dex.HistoricalPrices.TapTools.Client (tapToolsClientEnv)
+import GeniusYield.Server.DEX.HistoricalPrices.TapTools.Client (tapToolsClientEnv)
 import GeniusYield.Server.ErrorMiddleware
 import GeniusYield.Server.RequestLoggerMiddleware (gcpReqLogger)
 import GeniusYield.Server.Utils
@@ -40,6 +40,8 @@ import System.TimeManager (TimeoutThread (..))
 
 runServer :: Maybe FilePath -> IO ()
 runServer mfp = do
+  dexInfoDefaultMainnet' <- dexInfoDefaultMainnet
+  dexInfoDefaultPreprod' <- dexInfoDefaultMainnet
   serverConfig <- serverConfigOptionalFPIO mfp
   menv <- networkIdToMaestroEnv (case scMaestroToken serverConfig of Confidential t -> t) (scNetworkId serverConfig)
   mtenv <-
@@ -87,8 +89,8 @@ runServer mfp = do
             ctxNetworkId = nid,
             ctxDexInfo =
               if
-                | nid == GYMainnet -> dexInfoDefaultMainnet
-                | nid == GYTestnetPreprod -> dexInfoDefaultPreprod
+                | nid == GYMainnet ->        dexInfoDefaultMainnet'
+                | nid == GYTestnetPreprod -> dexInfoDefaultPreprod'
                 | otherwise -> error "Only mainnet & preprod network are supported",
             ctxMaestroProvider = MaestroProvider menv,
             ctxTapToolsProvider = mtenv,

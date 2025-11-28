@@ -2,7 +2,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE NoFieldSelectors #-}
 
 module GeniusYield.Api.DEX.TwoWayOrder.Simple
   ( SingleReverseParams (..)

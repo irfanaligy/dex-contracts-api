@@ -1,4 +1,4 @@
-module GeniusYield.Server.Dex.HistoricalPrices.Maestro (
+module GeniusYield.Server.DEX.HistoricalPrices.Maestro (
   mkLimit,
   unLimit,
   Limit,

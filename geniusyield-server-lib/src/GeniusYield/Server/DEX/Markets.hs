@@ -1,4 +1,4 @@
-module GeniusYield.Server.Dex.Markets (
+module GeniusYield.Server.DEX.Markets (
   MarketsAPI,
   handleMarketsApi,
 ) where

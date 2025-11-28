@@ -22,6 +22,7 @@ import GeniusYield.TxBuilder
 import GeniusYield.Types
 import RIO
 import Servant.Client (ClientEnv)
+import GeniusYield.Scripts (GYCompiledScripts, readCompiledScripts)
 
 type TapToolsApiKey = Text
 
@@ -51,7 +52,7 @@ runSkeletonI
   -- ^ User's change address.
   -> Maybe GYTxOutRef
   -- ^ User's collateral.
-  -> ReaderT DEXInfo GYTxBuilderMonadIO (GYTxSkeleton v)
+  -> ReaderT GYCompiledScripts GYTxBuilderMonadIO (GYTxSkeleton v)
   -> IO GYTxBody
 runSkeletonI = coerce (runSkeletonF @Identity)
 
@@ -65,7 +66,7 @@ runSkeletonWithStrategyI
   -- ^ User's change address.
   -> Maybe GYTxOutRef
   -- ^ User's collateral.
-  -> ReaderT DEXInfo GYTxBuilderMonadIO (GYTxSkeleton v)
+  -> ReaderT GYCompiledScripts GYTxBuilderMonadIO (GYTxSkeleton v)
   -> IO GYTxBody
 runSkeletonWithStrategyI cstrat = coerce (runSkeletonWithStrategyF @Identity cstrat)
 
@@ -78,7 +79,7 @@ runSkeletonF
   -- ^ User's change address.
   -> Maybe GYTxOutRef
   -- ^ User's collateral.
-  -> ReaderT DEXInfo GYTxBuilderMonadIO (t (GYTxSkeleton v))
+  -> ReaderT GYCompiledScripts GYTxBuilderMonadIO (t (GYTxSkeleton v))
   -> IO (t GYTxBody)
 runSkeletonF = runSkeletonWithStrategyF GYRandomImproveMultiAsset
 
@@ -92,7 +93,7 @@ runSkeletonWithStrategyF
   -- ^ User's change address.
   -> Maybe GYTxOutRef
   -- ^ User's collateral.
-  -> ReaderT DEXInfo GYTxBuilderMonadIO (t (GYTxSkeleton v))
+  -> ReaderT GYCompiledScripts GYTxBuilderMonadIO (t (GYTxSkeleton v))
   -> IO (t GYTxBody)
 runSkeletonWithStrategyF cstrat ctx addrs addr mcollateral skeleton = do
   let nid = ctxNetworkId ctx
@@ -101,11 +102,13 @@ runSkeletonWithStrategyF cstrat ctx addrs addr mcollateral skeleton = do
       mcollateral' = do
         collateral <- mcollateral
         pure (collateral, False)
+  gycs <- readCompiledScripts
+  runGYTxMonadNodeF cstrat nid providers (addr : addrs) addr mcollateral' $ runReaderT skeleton gycs
 
-  runGYTxMonadNodeF cstrat nid providers (addr : addrs) addr mcollateral' $ runReaderT skeleton di
-
-runQuery :: Ctx -> ReaderT DEXInfo GYTxQueryMonadIO a -> IO a
-runQuery ctx = runQueryWithReader ctx (ctxDexInfo ctx)
+runQuery :: Ctx -> ReaderT GYCompiledScripts GYTxQueryMonadIO a -> IO a
+runQuery ctx r = do
+    gycs <- readCompiledScripts
+    runQueryWithReader ctx gycs r
 
 runQueryWithReader :: Ctx -> a -> ReaderT a GYTxQueryMonadIO b -> IO b
 runQueryWithReader ctx a q = do

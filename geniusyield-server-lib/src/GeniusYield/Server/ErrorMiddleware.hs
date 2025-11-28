@@ -15,7 +15,7 @@ import Data.ByteString.Builder (toLazyByteString)
 import GeniusYield.HTTP.Errors
 import GeniusYield.Imports (lazyDecodeUtf8Lenient)
 import GeniusYield.Providers.Common (SubmitTxException (SubmitTxException))
-import GeniusYield.Server.Dex.PartialOrder (PodOrderNotFound, PodServerException)
+import GeniusYield.Server.DEX.PartialOrder (PodOrderNotFound, PodServerException)
 import GeniusYield.TxBuilder
 import Network.HTTP.Types (
   Status (statusCode, statusMessage),

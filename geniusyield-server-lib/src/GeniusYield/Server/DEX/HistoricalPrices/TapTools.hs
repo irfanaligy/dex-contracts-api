@@ -1,4 +1,4 @@
-module GeniusYield.Server.Dex.HistoricalPrices.TapTools (
+module GeniusYield.Server.DEX.HistoricalPrices.TapTools (
   TapToolsPriceHistoryAPI,
   handleTapToolsPriceHistoryApi,
 ) where
@@ -8,7 +8,7 @@ import Data.Swagger qualified as Swagger
 import Data.Swagger.Internal.Schema qualified as Swagger
 import Fmt
 import GeniusYield.Server.Ctx
-import GeniusYield.Server.Dex.HistoricalPrices.TapTools.Client (TapToolsInterval, TapToolsOHLCV, TapToolsUnit (TapToolsUnit), handleTapToolsError, tapToolsOHLCV)
+import GeniusYield.Server.DEX.HistoricalPrices.TapTools.Client (TapToolsInterval, TapToolsOHLCV, TapToolsUnit (TapToolsUnit), handleTapToolsError, tapToolsOHLCV)
 import GeniusYield.Server.Utils
 import GeniusYield.Types
 import RIO hiding (logDebug, logInfo)

@@ -17,9 +17,9 @@ extra-doc-files:
 
 tested-with:     GHC ==9.6.5
 
-source-repository head
-  type:     git
-  location: https://github.com/geniusyield/dex-contracts-api.git
+-- source-repository head
+--   type:     git
+--   location: https://github.com/geniusyield/dex-contracts-api.git
 
 common common
   default-language:   GHC2021

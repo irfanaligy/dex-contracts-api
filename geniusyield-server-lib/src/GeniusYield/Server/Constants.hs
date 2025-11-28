@@ -1,9 +1,9 @@
 module GeniusYield.Server.Constants (
-  module GeniusYield.Api.Dex.Constants,
+  module GeniusYield.Api.DEX.Constants,
   gitHash,
 ) where
 
-import GeniusYield.Api.Dex.Constants
+import GeniusYield.Api.DEX.Constants
 import GitHash
 import RIO
 
