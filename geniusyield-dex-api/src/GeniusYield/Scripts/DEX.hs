@@ -19,7 +19,6 @@ module GeniusYield.Scripts.DEX (
 ) where
 
 import GeniusYield.Scripts.DEX.NFT
--- import GeniusYield.Scripts.DEX.Option
 import GeniusYield.Scripts.DEX.PartialOrder
 import GeniusYield.Scripts.DEX.PartialOrderConfig
 import GeniusYield.Scripts.DEX.PartialOrderNFT

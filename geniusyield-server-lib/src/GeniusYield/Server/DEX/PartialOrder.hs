@@ -8,7 +8,6 @@ module GeniusYield.Server.DEX.PartialOrder (
 ) where
 
 import Data.Aeson (ToJSON (..))
-import Data.Ratio ((%))
 import Data.Strict.Tuple (Pair (..))
 import Data.Strict.Tuple qualified as Strict
 import Data.Swagger qualified as Swagger
@@ -16,13 +15,12 @@ import Data.Swagger.Internal.Schema qualified as Swagger
 import Deriving.Aeson
 import Fmt
 import GHC.TypeLits (AppendSymbol, Symbol)
--- import GeniusYield.Api.DEX.PartialOrder (PartialOrderInfo (..), cancelMultiplePartialOrders', fillMultiplePartialOrders', fillPartialOrder', getPartialOrdersInfos, getPartialOrdersInfos', getVersionsInOrders, orderByNft, partialOrderPrice', placePartialOrder'', preferentiallySelectLatestPocd, preferentiallySelectLatestVersion, roundFunctionForPOCVersion)
 import GeniusYield.Api.DEX.PartialOrder (PartialOrderInfo (..), cancelMultiplePartialOrders', fillMultiplePartialOrders', fillPartialOrder', getPartialOrdersInfos, getPartialOrdersInfos', getVersionsInOrders, orderByNft, partialOrderPrice', preferentiallySelectLatestPocd, preferentiallySelectLatestVersion, roundFunctionForPOCVersion)
-import GeniusYield.Api.DEX.PartialOrderConfig (RefPocd (..), SomeRefPocd (SomeRefPocd), fetchPartialOrderConfig, fetchPartialOrderConfigs, selectRefPocd)
+import GeniusYield.Api.DEX.PartialOrderConfig (fetchPartialOrderConfigs, selectRefPocd)
 import GeniusYield.HTTP.Errors
 import GeniusYield.OrderBot.Domain.Markets (OrderAssetPair (..))
 import GeniusYield.Scripts.DEX.PartialOrderConfig (PartialOrderConfigDatumF (..))
-import GeniusYield.Scripts.DEX.Version (POCVersion (POCVersion1_1))
+import GeniusYield.Scripts.DEX.Version (POCVersion)
 import GeniusYield.Server.Ctx
 import GeniusYield.Server.Orphans ()
 import GeniusYield.Server.Tx (handleTxSign, handleTxSubmit, throwNoSigningKeyError)
@@ -373,20 +371,10 @@ type CommonSignText :: Symbol
 type CommonSignText = "This endpoint would also sign & submit the built transaction. It uses the signing key from configuration to compute for wallet address. If collateral is specified in the configuration, then it would be used for."
 
 type OrdersAPI =
-  Summary "Build transaction to create order"
-    :> Description ("Build a transaction to create an order. In case \"stakeAddress\" field is provided then order is placed at a mangled address having the given staking credential. " `AppendSymbol` CommonCollateralText)
+  Summary "Build transaction to cancel order(s)"
+    :> Description ("Build a transaction to cancel order(s). " `AppendSymbol` CommonCollateralText)
     :> "tx"
-    :> "build-open"
-    -- :> ReqBody '[JSON] PlaceOrderParameters
-    -- :> Post '[JSON] PlaceOrderTransactionDetails
-    -- :<|> Summary "Create an order"
-    --   :> Description ("Create an order. " `AppendSymbol` CommonSignText `AppendSymbol` " \"stakeAddress\" field from configuration, if provided, is used to place order at a mangled address.")
-    --   :> ReqBody '[JSON] BotPlaceOrderParameters
-    --   :> Post '[JSON] PlaceOrderTransactionDetails
-    -- :<|> Summary "Build transaction to cancel order(s)"
-    --   :> Description ("Build a transaction to cancel order(s). " `AppendSymbol` CommonCollateralText)
-    --   :> "tx"
-    --   :> "build-cancel"
+    :> "build-cancel"
     :> ReqBody '[JSON] CancelOrderParameters
     :> Post '[JSON] CancelOrderTransactionDetails
     :<|> Summary "Cancel order(s)"
@@ -417,8 +405,6 @@ type OrdersAPI =
 
 handleOrdersApi :: Ctx -> ServerT OrdersAPI IO
 handleOrdersApi ctx =
-  -- handlePlaceOrder ctx
-  -- :<|> handlePlaceOrderAndSignSubmit ctx
   handleCancelOrders ctx
     :<|> handleCancelOrdersAndSignSubmit ctx
     :<|> handleOrdersDetails ctx
@@ -426,63 +412,12 @@ handleOrdersApi ctx =
     :<|> handleFillOrders ctx
     :<|> handleFillOrdersAndSignSubmit ctx
 
--- handlePlaceOrder :: Ctx -> PlaceOrderParameters -> IO PlaceOrderTransactionDetails
--- handlePlaceOrder ctx@Ctx {..} pops@PlaceOrderParameters {..} = do
---   logInfo ctx $ "Placing an order. Parameters: " +|| pops ||+ ""
---   let porefs = dexPORefs ctxDexInfo
---       popAddresses' = addressFromBech32 <$> popAddresses
---       changeAddr = maybe (NonEmpty.head popAddresses') (\(ChangeAddress addr) -> addressFromBech32 addr) popChangeAddress
---       pocVersion = POCVersion1_1
---   SomeRefPocd (RefPocd (cfgRef :!: pocd)) <- runQuery ctx $ fetchPartialOrderConfig pocVersion porefs
---   let unitPrice =
---         rationalFromGHC
---           $ toInteger popPriceAmount
---           % toInteger popOfferAmount
---   (nftAC, txBody) <-
---     runSkeletonF ctx (NonEmpty.toList popAddresses') changeAddr popCollateral
---       $ placePartialOrder''
---         porefs
---         changeAddr
---         (naturalToGHC popOfferAmount, popOfferToken)
---         popPriceToken
---         unitPrice
---         popStart
---         popEnd
---         0
---         0
---         (fmap (stakeAddressToCredential . stakeAddressFromBech32) popStakeAddress)
---         cfgRef
---         pocd
---   let txId = txBodyTxId txBody
---   pure
---     PlaceOrderTransactionDetails
---       { potdTransaction = unsignedTx txBody,
---         potdTransactionId = txId,
---         potdTransactionFee = fromIntegral $ txBodyFee txBody,
---         potdMakerLovelaceFlatFee = fromIntegral $ pociMakerFeeFlat pocd,
---         potdMakerOfferedPercentFee = 100 * pociMakerFeeRatio pocd,
---         potdMakerOfferedPercentFeeAmount = roundFunctionForPOCVersion pocVersion $ toRational popOfferAmount * rationalToGHC (pociMakerFeeRatio pocd),
---         potdLovelaceDeposit = fromIntegral $ pociMinDeposit pocd,
---         potdOrderRef = txOutRefFromTuple (txId, 0),
---         potdNFTToken = nftAC
---       }
---
 resolveCtxSigningKeyInfo :: Ctx -> IO (Strict.Pair GYSomePaymentSigningKey GYAddress)
 resolveCtxSigningKeyInfo ctx = maybe throwNoSigningKeyError pure (ctxSigningKey ctx)
 
 --
 resolveCtxAddr :: Ctx -> IO GYAddress
 resolveCtxAddr ctx = Strict.snd <$> resolveCtxSigningKeyInfo ctx
-
--- handlePlaceOrderAndSignSubmit :: Ctx -> BotPlaceOrderParameters -> IO PlaceOrderTransactionDetails
--- handlePlaceOrderAndSignSubmit ctx BotPlaceOrderParameters {..} = do
---   logInfo ctx "Placing an order and signing & submitting the transaction."
---   ctxAddr <- addressToBech32 <$> resolveCtxAddr ctx
---   details <- handlePlaceOrder ctx $ PlaceOrderParameters {popAddresses = pure ctxAddr, popChangeAddress = Just (ChangeAddress ctxAddr), popStakeAddress = ctxStakeAddress ctx, popCollateral = ctxCollateral ctx, popOfferToken = bpopOfferToken, popOfferAmount = bpopOfferAmount, popPriceToken = bpopPriceToken, popPriceAmount = bpopPriceAmount, popStart = bpopStart, popEnd = bpopEnd}
---   signedTx <- handleTxSign ctx $ potdTransaction details
---   txId <- handleTxSubmit ctx signedTx
---   -- Though transaction id would be same, but we are returning it again, just in case...
---   pure $ details {potdTransactionId = txId, potdTransaction = signedTx}
 
 handleCancelOrders :: Ctx -> CancelOrderParameters -> IO CancelOrderTransactionDetails
 handleCancelOrders ctx@Ctx {..} cops@CancelOrderParameters {..} = do

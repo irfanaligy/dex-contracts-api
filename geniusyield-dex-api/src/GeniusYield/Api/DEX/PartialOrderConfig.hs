@@ -29,8 +29,6 @@ import Data.Strict.Tuple (Pair (..))
 import Data.Text qualified as Txt
 -- , mustMint
 
--- import GeniusYield.Api.DEX.Utils (NftInfo (..), nftInfo)
--- import GeniusYield.Api.OneWay (deployScript)
 import GeniusYield.Api.Types
 import GeniusYield.HTTP.Errors (GYApiError (..), IsGYApiError (..))
 import GeniusYield.Imports

@@ -30,7 +30,6 @@ module GeniusYield.Scripts.DEX.PartialOrderConfig (
 
 import GHC.Generics (Generic)
 import GeniusYield.Scripts.DEX.PartialOrderConfig.OnChain qualified as OnChain
--- import GeniusYield.OnChain.DEX.PartialOrderConfig.Compiled qualified as OnChain
 import GeniusYield.Scripts.DEX.Version
 import GeniusYield.Scripts.Internal
 import GeniusYield.Types
@@ -118,8 +117,8 @@ partialOrderConfigValidator GYCompiledScriptsRaw {gycsDEXPartialOrderConfig, gyc
       if
         | ac == "fae686ea8f21d567841d703dea4d4221c2af071a6f2b433ff07c0af2.8309f9861928a55d37e84f6594b878941edce5e351f7904c2c63b559bde45c5c" -> gycsDEXPartialOrderConfigV1AppliedPreprod
         | ac == "fae686ea8f21d567841d703dea4d4221c2af071a6f2b433ff07c0af2.4aff78908ef2dce98bfe435fb3fd2529747b1c4564dff5adebedf4e46d0fc63d" -> gycsDEXPartialOrderConfigV1AppliedMainnet
-        -- \| otherwise -> validatorFromPlutus . OnChain.originalPartialOrderConfigValidator . assetClassToPlutus $ ac
         | otherwise -> error "partialOrderConfigValidator not found"
+    -- \| otherwise -> validatorFromPlutus . OnChain.originalPartialOrderConfigValidator . assetClassToPlutus $ ac
     POCVersion1_1 -> validatorFromPly $ gycsDEXPartialOrderConfig # assetClassToPlutus ac
 
 partialOrderConfigPlutusAddr :: GYCompiledScriptsRaw -> POCVersion -> GYAssetClass -> Plutus.Address

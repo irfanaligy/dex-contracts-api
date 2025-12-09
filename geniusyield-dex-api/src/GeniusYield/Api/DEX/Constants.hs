@@ -10,19 +10,11 @@ module GeniusYield.Api.DEX.Constants (
   dexInfoDefaultPreprod,
 ) where
 
--- import GeniusYield.Api.DEX.TwoWayOrderConfig (TWORef (..), RefTWOCD (..), fetchTwoWayOrderConfig)
-
 import GeniusYield.Api.DEX.PartialOrderConfig (PORef (..), PORefs (..))
 import GeniusYield.Api.DEX.TwoWayOrderConfig (TWORef (..))
 import GeniusYield.Scripts (GYCompiledScripts, readCompiledScripts)
 import GeniusYield.Scripts.DEX.Version (POCVersion (POCVersion1, POCVersion1_1))
 import GeniusYield.Types (GYAddress, unsafeAddressFromText)
-
--- import Control.Monad.Reader (runReaderT)
--- import PlutusLedgerApi.V1 (Address)
--- import PlutusLedgerApi.V1.Scripts (ScriptHash)
--- import PlutusLedgerApi.V1.Value (AssetClass)
--- import Ply (ScriptRole (..), TypedScript)
 
 poRefsMainnet :: PORefs
 poRefsMainnet =

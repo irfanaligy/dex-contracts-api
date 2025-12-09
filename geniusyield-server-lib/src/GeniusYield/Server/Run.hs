@@ -3,7 +3,6 @@ module GeniusYield.Server.Run (
 ) where
 
 import Control.Monad.Trans.Except (ExceptT (ExceptT))
--- import Data.Aeson.Encode.Pretty (encodePretty)
 import Data.Strict qualified as Strict
 import Data.Version (showVersion)
 import Data.Yaml.Pretty qualified as Yaml
@@ -18,10 +17,6 @@ import GeniusYield.Server.Auth
 import GeniusYield.Server.Config (ServerConfig (..), coreConfigFromServerConfig, optionalSigningKeyFromServerConfig, serverConfigOptionalFPIO)
 import GeniusYield.Server.Constants (gitHash)
 import GeniusYield.Server.Ctx
--- import RIO.ByteString.Lazy qualified as BL
-
--- import Servant.PY (requests, writePythonForAPI)
-
 import GeniusYield.Server.DEX.HistoricalPrices.TapTools.Client (tapToolsClientEnv)
 import GeniusYield.Server.ErrorMiddleware
 import GeniusYield.Server.RequestLoggerMiddleware (gcpReqLogger)

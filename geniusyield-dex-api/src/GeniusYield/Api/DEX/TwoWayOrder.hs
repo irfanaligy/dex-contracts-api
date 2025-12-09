@@ -39,8 +39,6 @@ module GeniusYield.Api.DEX.TwoWayOrder (
   -- ^ for use in smart-order-router
 ) where
 
--- import Data.Map.Merge.Strict qualified as Map
-
 import Control.Applicative (empty)
 import Control.Lens ((?~))
 import Control.Monad (foldM, unless, when)
@@ -786,6 +784,7 @@ data OrderAssets = OrderAssets
     oaReverseAsset :: !GYAssetClass,
     oaReverseAmount :: !Integer
   }
+  deriving (Eq, Show)
 
 extractOrderAssets :: TwoWayOrderInfo -> OrderAssets
 extractOrderAssets TwoWayOrderInfo {twoiOffer} =
@@ -809,7 +808,7 @@ extractOrderAssets TwoWayOrderInfo {twoiOffer} =
 
 data PriceVal = FixedVal GYRational | DynamicVal PriceDelta deriving (Eq, Show)
 
-data OrderPrices = OrderPrices {opStraightPrice :: PriceVal, opReversePrice :: Maybe PriceVal}
+data OrderPrices = OrderPrices {opStraightPrice :: PriceVal, opReversePrice :: Maybe PriceVal} deriving (Eq, Show)
 
 extractOrderPrices :: TwoWayOrderInfo -> OrderPrices
 extractOrderPrices TwoWayOrderInfo {twoiOffer} =

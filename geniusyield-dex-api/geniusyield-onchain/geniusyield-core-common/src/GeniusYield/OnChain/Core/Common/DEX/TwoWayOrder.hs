@@ -18,11 +18,6 @@ module GeniusYield.OnChain.Core.Common.DEX.TwoWayOrder (
 
 import Data.ByteString (ByteString)
 import GHC.Generics (type Generic)
--- import Data.Aeson qualified as Aeson
--- import Data.Swagger.Internal.Schema qualified as Swagger
--- import PlutusLedgerApi.Data.V1
--- import PlutusLedgerApi.V1.Value as Ledger
-
 import PlutusLedgerApi.V1
 import PlutusLedgerApi.V1.Value (AssetClass)
 import PlutusTx.Ratio qualified as Tx
