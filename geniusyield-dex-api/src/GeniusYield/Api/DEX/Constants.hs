@@ -53,11 +53,11 @@ poRefsPreprod =
 twoRefsMainnet :: TWORef
 twoRefsMainnet =
   TWORef
-    { tworRefNft = "",
-      tworMintRef = "",
-      tworSpendRef = "",
-      tworFillRef = "",
-      tworCancelRef = ""
+    { tworRefNft = "fae686ea8f21d567841d703dea4d4221c2af071a6f2b433ff07c0af2.b5ac684fbd87ec5daa82ab200eaa8e9cc9ca260313efb2727d9d0b3236d8420a",
+      tworMintRef = "2e39463cbaf97a99850fd5bfa9fc54efc9f0bd7f14f3b2c41dc59828bf1851cc#1",
+      tworSpendRef = "c306121c43bdb35d211ecb18f1e5056a30e394a64e5c45402993a8c9ee306ae1#0",
+      tworFillRef = "e5ff09817bb4095ca9f09952b61c230df3f459d467ed2b915412ba864f62fb13#0",
+      tworCancelRef = "32a445746126f329c2f97e493ea89096c154ca4532c3707e29e92d65d6aa1602#0"
     }
 
 twoRefsPreprod :: TWORef

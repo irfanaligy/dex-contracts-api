@@ -29,3 +29,5 @@ secrets/
 *.swp
 tags
 TAGS
+*.local
+*.local.yml
